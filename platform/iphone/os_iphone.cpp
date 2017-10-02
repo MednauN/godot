@@ -97,6 +97,17 @@ int OSIPhone::get_current_video_driver() const {
 	return video_driver_index;
 }
 
+void OSIPhone::initialize_logger() {
+	Vector<Logger *> loggers;
+	loggers.push_back(memnew(SyslogLogger));
+#ifdef DEBUG_ENABLED
+	// it seems iOS app's stdout/stderr is only obtainable if you launch it from Xcode
+	loggers.push_back(memnew(StdLogger));
+#endif
+	loggers.push_back(memnew(RotatedFileLogger("user://logs/log.txt")));
+	_set_logger(memnew(CompositeLogger(loggers)));
+}
+
 Error OSIPhone::initialize(const VideoMode &p_desired, int p_video_driver, int p_audio_driver) {
 
 	video_driver_index = VIDEO_DRIVER_GLES3;
@@ -370,15 +381,23 @@ Error OSIPhone::close_dynamic_library(void *p_library_handle) {
 
 HashMap<String, void *> OSIPhone::dynamic_symbol_lookup_table;
 void register_dynamic_symbol(char *name, void *address) {
+	printf("Registering dynamic symbol \"%s\" to address: %p\n", name, address);
 	OSIPhone::dynamic_symbol_lookup_table[String(name)] = address;
 }
 
 Error OSIPhone::get_dynamic_library_symbol_handle(void *p_library_handle, const String p_name, void *&p_symbol_handle, bool p_optional) {
 	if (p_library_handle == RTLD_SELF) {
 		void **ptr = OSIPhone::dynamic_symbol_lookup_table.getptr(p_name);
+		printf("Retriving dynamic symbol \"%s\", got: %p\n", p_name.utf8().get_data(), ptr);
 		if (ptr) {
 			p_symbol_handle = *ptr;
 			return OK;
+		}
+		List<String> keys;
+		OSIPhone::dynamic_symbol_lookup_table.get_key_list(&keys);
+		printf("Existing keys:\n");
+		for (List<String>::Element *E = keys.front(); E; E = E->next()) {
+			printf("%s\n", E->get().utf8().get_data());
 		}
 	}
 	return OS_Unix::get_dynamic_library_symbol_handle(p_library_handle, p_name, p_symbol_handle, p_optional);
