@@ -58,7 +58,7 @@ public class PaymentsManager {
 	private static boolean auto_consume = true;
 
 	private Activity activity;
-	IInAppBillingService mService;
+	volatile IInAppBillingService mService;
 
 	public void setActivity(Activity activity) {
 		this.activity = activity;
@@ -387,7 +387,12 @@ public class PaymentsManager {
 					querySkus.putStringArrayList("ITEM_ID_LIST", skuPartList);
 					Bundle skuDetails = null;
 					try {
-						skuDetails = mService.getSkuDetails(3, activity.getPackageName(), "inapp", querySkus);
+						IInAppBillingService service = PaymentsManager.this.mService;
+						if (service == null) {
+							godotPaymentV3.errorSkuDetail("No connection to InAppBillingService");
+							return;
+						}
+						skuDetails = service.getSkuDetails(3, activity.getPackageName(), "inapp", querySkus);
 						if (!skuDetails.containsKey("DETAILS_LIST")) {
 							int response = getResponseCodeFromBundle(skuDetails);
 							if (response != BILLING_RESPONSE_RESULT_OK) {
