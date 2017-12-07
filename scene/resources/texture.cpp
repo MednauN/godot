@@ -420,8 +420,9 @@ ImageTexture::ImageTexture() {
 }
 
 ImageTexture::~ImageTexture() {
-
-	VisualServer::get_singleton()->free(texture);
+	if (VisualServer::get_singleton()) {
+		VisualServer::get_singleton()->free(texture);
+	}
 }
 
 //////////////////////////////////////////
