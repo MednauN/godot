@@ -430,8 +430,8 @@ EditorResourcePreview::~EditorResourcePreview() {
 
 	exit = true;
 	preview_sem->post();
-	Thread::wait_to_finish(thread);
-	memdelete(thread);
-	memdelete(preview_mutex);
-	memdelete(preview_sem);
+	//Thread::wait_to_finish(thread);
+	//memdelete(thread);
+	//memdelete(preview_mutex);
+	//memdelete(preview_sem);
 }
