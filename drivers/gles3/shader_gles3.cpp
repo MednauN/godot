@@ -219,6 +219,25 @@ ShaderGLES3::Version *ShaderGLES3::get_current_version() {
 	strings.push_back("#version 300 es\n");
 #endif
 
+#ifdef ANDROID_ENABLED
+	// Hacks for Adreno 3xx GPUs
+
+	// Hack 1 - sometimes shader compiler crashes when parsing code like `if (some_bool) { ... }` 
+	// if `some_bool` was declared within `UniformData` struct
+	// Replacting `some_bool` with `int(some_bool) != 0` fixes the crash
+	strings.push_back("#define UNWRAP_BOOL(b) (int(b) != 0)\n");
+
+	// Hack 2 - compiler may hang on code with `pow` calls
+	// Seems like it's because shader compiler tries to inline `pow` but somehow fails
+	// Wrapping `pow` into another function forces the compiler never inline `pow`
+	strings.push_back("float pow_no_inline(float x, float y) {\n\treturn pow(x, y);\n}\n");
+	strings.push_back("vec2 pow_no_inline(vec2 x, vec2 y) {\n\treturn pow(x, y);\n}\n");
+	strings.push_back("vec3 pow_no_inline(vec3 x, vec3 y) {\n\treturn pow(x, y);\n}\n");
+	strings.push_back("vec4 pow_no_inline(vec4 x, vec4 y) {\n\treturn pow(x, y);\n}\n");
+	// According to GLES specification (paragraph 8.2) `pow` accepts float, vec2, vec3 and vec4 arguments
+	strings.push_back("#define pow(x, y) pow_no_inline(x, y)\n");
+#endif
+
 	int define_line_ofs = 1;
 
 	for (int i = 0; i < custom_defines.size(); i++) {
