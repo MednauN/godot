@@ -3,9 +3,12 @@
 Import('env')
 
 import shutil
+import string
+import sys
 from compat import open_utf8
 from distutils.version import LooseVersion
 from detect import get_ndk_version
+import platform
 
 android_files = [
 
@@ -167,6 +170,38 @@ elif env['android_arch'] == 'x86':
 else:
     print('WARN: Architecture not suitable for embedding into APK; keeping .so at \\bin')
 
+def get_tools_path(env):
+    if env['android_arch'] == 'x86':
+        target_subpath = "x86-4.9"
+        abi_subpath = "i686-linux-android-"
+    elif env['android_arch'] == 'armv6' or env["android_arch"] == "armv7":
+        target_subpath = "arm-linux-androideabi-4.9"
+        abi_subpath = "arm-linux-androideabi-"
+    elif env["android_arch"] == "arm64v8":
+        target_subpath = "aarch64-linux-android-4.9"
+        abi_subpath = "aarch64-linux-android-"
+
+    if (sys.platform.startswith("linux")):
+        host_subpath = "linux-x86_64"
+    elif (sys.platform.startswith("darwin")):
+        host_subpath = "darwin-x86_64"
+    elif (sys.platform.startswith('win')):
+        if (platform.machine().endswith('64')):
+            host_subpath = "windows-x86_64"
+        else:
+            host_subpath = "windows"
+    return env["ANDROID_NDK_ROOT"] + "/toolchains/" + target_subpath + "/prebuilt/" + host_subpath + "/bin/" + abi_subpath
+
+def extract_debug_symbols(target=None, source=None, env=None):
+    tools_path = get_tools_path(env)
+    for lib in source:
+        env.Execute(tools_path + 'objcopy --only-keep-debug "' + lib.srcnode().abspath + '" "' + target[0].srcnode().abspath + '"')
+        env.Execute(tools_path + 'objcopy --add-gnu-debuglink="' + target[0].srcnode().abspath + '" "' + lib.srcnode().abspath + '"')
+
+def strip_debug_symbols(target=None, source=None, env=None):
+    tools_path = get_tools_path(env)
+    env.Execute(tools_path + 'strip --strip-debug --strip-unneeded "' + source[0].srcnode().abspath + '"')
+
 if lib_arch_dir != '':
     if env['target'] == 'release':
         lib_type_dir = 'release'
@@ -174,7 +209,12 @@ if lib_arch_dir != '':
         lib_type_dir = 'debug'
 
     out_dir = '#platform/android/java/libs/' + lib_type_dir + '/' + lib_arch_dir
-    env_android.Command(out_dir + '/libgodot_android.so', '#bin/libgodot' + env['SHLIBSUFFIX'], Move("$TARGET", "$SOURCE"))
+    extract_cmd = env_android.Command('#bin/libgodot_symbols.android.' + lib_type_dir + '.so', '#bin/libgodot' + env['SHLIBSUFFIX'], extract_debug_symbols)
+    if env['target'] == 'release':
+        env_android.Command(None, '#bin/libgodot' + env['SHLIBSUFFIX'], strip_debug_symbols)
+    move_cmd = env_android.Command(out_dir + '/libgodot_android.so', '#bin/libgodot' + env['SHLIBSUFFIX'], Move("$TARGET", "$SOURCE"))
+    env_android.Requires(move_cmd, extract_cmd)
+
     ndk_version = get_ndk_version(env["ANDROID_NDK_ROOT"])
     if ndk_version != None and LooseVersion(ndk_version) >= LooseVersion("15.0.4075724"):
         stl_lib_path = str(env['ANDROID_NDK_ROOT']) + '/sources/cxx-stl/llvm-libc++/libs/' + lib_arch_dir + '/libc++_shared.so'
