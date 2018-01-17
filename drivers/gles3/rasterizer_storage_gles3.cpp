@@ -7545,7 +7545,7 @@ void RasterizerStorageGLES3::initialize() {
 	config.rgtc_supported = true; //RGTC - core since OpenGL version 3.0
 #else
 	config.etc2_supported = true;
-	config.hdr_supported = false;
+	config.hdr_supported = config.extensions.has("GL_EXT_color_buffer_half_float");
 	config.s3tc_supported = config.extensions.has("GL_EXT_texture_compression_dxt1") || config.extensions.has("GL_EXT_texture_compression_s3tc") || config.extensions.has("WEBGL_compressed_texture_s3tc");
 	config.rgtc_supported = config.extensions.has("GL_EXT_texture_compression_rgtc") || config.extensions.has("GL_ARB_texture_compression_rgtc");
 #endif
