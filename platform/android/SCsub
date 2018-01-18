@@ -113,8 +113,8 @@ for x in env.android_asset_dirs:
 
 gradle_default_config_text = ""
 
-minSdk = 18
-targetSdk = 27
+minSdk = 22
+targetSdk = 23
 
 for x in env.android_default_config:
     if x.startswith("minSdkVersion") and int(x.split(" ")[-1]) < minSdk:
