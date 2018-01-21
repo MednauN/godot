@@ -6249,7 +6249,7 @@ void RasterizerStorageGLES3::update_particles() {
 		shaders.particles.set_uniform(ParticlesShaderGLES3::TIME, frame.time[0]);
 		shaders.particles.set_uniform(ParticlesShaderGLES3::EXPLOSIVENESS, particles->explosiveness);
 		shaders.particles.set_uniform(ParticlesShaderGLES3::LIFETIME, particles->lifetime);
-		shaders.particles.set_uniform(ParticlesShaderGLES3::ATTRACTOR_COUNT, 0);
+		// shaders.particles.set_uniform(ParticlesShaderGLES3::ATTRACTOR_COUNT, 0);
 		shaders.particles.set_uniform(ParticlesShaderGLES3::EMITTING, particles->emitting);
 		shaders.particles.set_uniform(ParticlesShaderGLES3::RANDOMNESS, particles->randomness);
 

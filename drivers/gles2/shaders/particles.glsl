@@ -9,17 +9,17 @@ layout(location = 3) in highp vec4 xform_1;
 layout(location = 4) in highp vec4 xform_2;
 layout(location = 5) in highp vec4 xform_3;
 
-struct Attractor {
+// struct Attractor {
 
-	vec3 pos;
-	vec3 dir;
-	float radius;
-	float eat_radius;
-	float strength;
-	float attenuation;
-};
+// 	vec3 pos;
+// 	vec3 dir;
+// 	float radius;
+// 	float eat_radius;
+// 	float strength;
+// 	float attenuation;
+// };
 
-#define MAX_ATTRACTORS 64
+// #define MAX_ATTRACTORS 64
 
 uniform bool emitting;
 uniform float system_phase;
@@ -30,8 +30,8 @@ uniform float randomness;
 uniform float time;
 uniform float delta;
 
-uniform int attractor_count;
-uniform Attractor attractors[MAX_ATTRACTORS];
+// uniform int attractor_count;
+// uniform Attractor attractors[MAX_ATTRACTORS];
 uniform bool clear;
 uniform uint cycle;
 uniform float lifetime;
@@ -180,36 +180,36 @@ VERTEX_SHADER_CODE
 			/* clang-format on */
 		}
 
-#if !defined(DISABLE_FORCE)
+// #if !defined(DISABLE_FORCE)
 
-		if (false) {
+// 		if (false) {
 
-			vec3 force = vec3(0.0);
-			for (int i = 0; i < attractor_count; i++) {
+// 			vec3 force = vec3(0.0);
+// 			for (int i = 0; i < attractor_count; i++) {
 
-				vec3 rel_vec = xform[3].xyz - attractors[i].pos;
-				float dist = length(rel_vec);
-				if (attractors[i].radius < dist)
-					continue;
-				if (attractors[i].eat_radius > 0.0 && attractors[i].eat_radius > dist) {
-					out_velocity_active.a = 0.0;
-				}
+// 				vec3 rel_vec = xform[3].xyz - attractors[i].pos;
+// 				float dist = length(rel_vec);
+// 				if (attractors[i].radius < dist)
+// 					continue;
+// 				if (attractors[i].eat_radius > 0.0 && attractors[i].eat_radius > dist) {
+// 					out_velocity_active.a = 0.0;
+// 				}
 
-				rel_vec = normalize(rel_vec);
+// 				rel_vec = normalize(rel_vec);
 
-				float attenuation = pow(dist / attractors[i].radius, attractors[i].attenuation);
+// 				float attenuation = pow(dist / attractors[i].radius, attractors[i].attenuation);
 
-				if (attractors[i].dir == vec3(0.0)) {
-					//towards center
-					force += attractors[i].strength * rel_vec * attenuation * mass;
-				} else {
-					force += attractors[i].strength * attractors[i].dir * attenuation * mass;
-				}
-			}
+// 				if (attractors[i].dir == vec3(0.0)) {
+// 					//towards center
+// 					force += attractors[i].strength * rel_vec * attenuation * mass;
+// 				} else {
+// 					force += attractors[i].strength * attractors[i].dir * attenuation * mass;
+// 				}
+// 			}
 
-			out_velocity_active.xyz += force * local_delta;
-		}
-#endif
+// 			out_velocity_active.xyz += force * local_delta;
+// 		}
+// #endif
 
 #if !defined(DISABLE_VELOCITY)
 
