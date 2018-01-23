@@ -90,7 +90,6 @@ void _err_print_index_error(const char *p_function, const char *p_file, int p_li
 
 extern bool _err_error_exists;
 
-#ifdef DEBUG_ENABLED
 /** Print a warning string.
  */
 #define ERR_EXPLAINC(m_reason)         \
@@ -103,13 +102,6 @@ extern bool _err_error_exists;
 		_err_set_last_error(String(m_string).utf8().get_data()); \
 		_err_error_exists = true;                                \
 	}
-
-#else
-
-#define ERR_EXPLAIN(m_text)
-#define ERR_EXPLAINC(m_text)
-
-#endif
 
 #ifdef __GNUC__
 //#define FUNCTION_STR __PRETTY_FUNCTION__ - too annoying
