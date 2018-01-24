@@ -141,7 +141,7 @@ def configure(env):
     if (env["target"].startswith("release")):
         if (env["optimize"] == "speed"): #optimize for speed (default)
             env.Append(LINKFLAGS=['-O2'])
-            env.Append(CPPFLAGS=['-O2', '-DNDEBUG', '-g', '-ffast-math', '-funsafe-math-optimizations', '-fomit-frame-pointer'])
+            env.Append(CPPFLAGS=['-O2', '-DNDEBUG', '-g3', '-fno-limit-debug-info', '-ffast-math', '-funsafe-math-optimizations'])
         else: #optimize for size
             env.Append(CPPFLAGS=['-Os', '-DNDEBUG'])
             env.Append(LINKFLAGS=['-Os'])
@@ -153,7 +153,7 @@ def configure(env):
     elif (env["target"] == "debug"):
         env.Append(LINKFLAGS=['-O0'])
         env.Append(CPPFLAGS=['-O0', '-D_DEBUG', '-UNDEBUG', '-DDEBUG_ENABLED',
-                             '-DDEBUG_MEMORY_ENABLED', '-g', '-fno-limit-debug-info'])
+                             '-DDEBUG_MEMORY_ENABLED', '-g3', '-fno-limit-debug-info'])
 
     ## Compiler configuration
 
