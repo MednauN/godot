@@ -6744,6 +6744,7 @@ void RasterizerStorageGLES3::_render_target_allocate(RenderTarget *rt) {
 				status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 				if (status != GL_FRAMEBUFFER_COMPLETE) {
 					_render_target_clear(rt);
+					ERR_EXPLAIN(String("Unexpected framebuffer status: ") + itos(status));
 					ERR_FAIL_COND(status != GL_FRAMEBUFFER_COMPLETE);
 				}
 			}
