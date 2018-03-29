@@ -36,6 +36,6 @@ $$ADD_APPLICATION_CHUNKS$$
 
 $$ADD_PERMISSION_CHUNKS$$
 
-<uses-sdk android:minSdkVersion="23" android:targetSdkVersion="27"/>
+<uses-sdk android:minSdkVersion="21" android:targetSdkVersion="27"/>
 
 </manifest>
