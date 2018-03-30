@@ -195,7 +195,6 @@ def get_tools_path(env):
 def extract_debug_symbols(target=None, source=None, env=None):
     tools_path = get_tools_path(env)
     for lib in source:
-        env.Execute(tools_path + 'objcopy --only-keep-debug "' + lib.srcnode().abspath + '" "' + target[0].srcnode().abspath + '"')
         env.Execute(tools_path + 'objcopy --add-gnu-debuglink="' + target[0].srcnode().abspath + '" "' + lib.srcnode().abspath + '"')
 
 def strip_debug_symbols(target=None, source=None, env=None):
@@ -209,7 +208,8 @@ if lib_arch_dir != '':
         lib_type_dir = 'debug'
 
     out_dir = '#platform/android/java/libs/' + lib_type_dir + '/' + lib_arch_dir
-    extract_cmd = env_android.Command('#bin/libgodot_symbols.android.' + lib_type_dir + '.so', '#bin/libgodot' + env['SHLIBSUFFIX'], extract_debug_symbols)
+    symbols_name = '#bin/libgodot_symbols.android.' + lib_arch_dir + '.' + lib_type_dir + '.so'
+    extract_cmd = env_android.Command(symbols_name, '#bin/libgodot' + env['SHLIBSUFFIX'], [Copy("$TARGET", "$SOURCE"), extract_debug_symbols])
     if env['target'] == 'release':
         env_android.Command(None, '#bin/libgodot' + env['SHLIBSUFFIX'], strip_debug_symbols)
     move_cmd = env_android.Command(out_dir + '/libgodot_android.so', '#bin/libgodot' + env['SHLIBSUFFIX'], Move("$TARGET", "$SOURCE"))
