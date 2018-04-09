@@ -35,30 +35,31 @@ import java.util.ArrayList;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import org.godotengine.godot.Dictionary;
-import org.godotengine.godot.Godot;
 import com.android.vending.billing.IInAppBillingService;
 
 import android.content.Context;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.RemoteException;
 import android.util.Log;
 
 abstract public class ReleaseAllConsumablesTask {
 
 	private Context context;
-	private IInAppBillingService mService;
+	private InAppBillingServiceProvider mServiceProvider;
 
-	public ReleaseAllConsumablesTask(IInAppBillingService mService, Context context) {
+	public ReleaseAllConsumablesTask(InAppBillingServiceProvider serviceProvider, Context context) {
 		this.context = context;
-		this.mService = mService;
+		mServiceProvider = serviceProvider;
 	}
 
 	public void consumeItAll() {
 		try {
 			//Log.d("godot", "consumeItall for " + context.getPackageName());
-			Bundle bundle = mService.getPurchases(3, context.getPackageName(), "inapp", null);
+			IInAppBillingService service = mServiceProvider.getBillingService();
+			if (service == null) {
+				error("No connection to InAppBillingService");
+				return;
+			}
+			Bundle bundle = service.getPurchases(3, context.getPackageName(), "inapp", null);
 
 			for (String key : bundle.keySet()) {
 				Object value = bundle.get(key);
@@ -87,7 +88,7 @@ abstract public class ReleaseAllConsumablesTask {
 						String token = inappPurchaseData.getString("purchaseToken");
 						String signature = mySignatures.get(i);
 						//Log.d("godot", "A punto de consumir un item con token:" + token + "\n" + receipt);
-						new GenericConsumeTask(context, mService, sku, receipt, signature, token) {
+						new GenericConsumeTask(context, mServiceProvider, sku, receipt, signature, token) {
 							@Override
 							public void onSuccess(String sku, String receipt, String signature, String token) {
 								ReleaseAllConsumablesTask.this.success(sku, receipt, signature, token);

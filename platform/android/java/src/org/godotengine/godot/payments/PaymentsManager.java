@@ -50,12 +50,14 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.concurrent.TimeoutException;
 
-public class PaymentsManager {
+public class PaymentsManager implements InAppBillingServiceProvider {
 
 	public static final int BILLING_RESPONSE_RESULT_OK = 0;
 	public static final int REQUEST_CODE_FOR_PURCHASE = 0x1001;
 	private static boolean auto_consume = true;
+	private static final long SERVICE_CONNECT_TIMEOUT = 5000;
 
 	private Activity activity;
 	volatile IInAppBillingService mService;
@@ -76,15 +78,19 @@ public class PaymentsManager {
 	public PaymentsManager initService() {
 		Intent intent = new Intent("com.android.vending.billing.InAppBillingService.BIND");
 		intent.setPackage("com.android.vending");
-		activity.bindService(
+		boolean isBound = activity.bindService(
 				intent,
 				mServiceConn,
 				Context.BIND_AUTO_CREATE);
+		if (!isBound) {
+			mServiceConn = null;
+		}
 		return this;
 	}
 
 	public void destroy() {
-		if (mService != null) {
+		if (mServiceConn != null) {
+			mService = null;
 			activity.unbindService(mServiceConn);
 		}
 	}
@@ -112,7 +118,7 @@ public class PaymentsManager {
 	};
 
 	public void requestPurchase(final String sku, String transactionId) {
-		new PurchaseTask(mService, Godot.getInstance()) {
+		new PurchaseTask(this, Godot.getInstance()) {
 			@Override
 			protected void error(String message) {
 				godotPaymentV3.callbackFail(message);
@@ -136,7 +142,7 @@ public class PaymentsManager {
 	}
 
 	public void consumeUnconsumedPurchases() {
-		new ReleaseAllConsumablesTask(mService, activity) {
+		new ReleaseAllConsumablesTask(this, activity) {
 			@Override
 			protected void success(String sku, String receipt, String signature, String token) {
 				godotPaymentV3.callbackSuccessProductMassConsumed(receipt, signature, sku);
@@ -165,6 +171,7 @@ public class PaymentsManager {
 
 			do {
 				Bundle bundle = mService.getPurchases(3, activity.getPackageName(), "inapp", continueToken);
+				// No need to check mService for null here because it's inside try-catch anyway
 
 				if (bundle.getInt("RESPONSE_CODE") == 0) {
 
@@ -210,7 +217,7 @@ public class PaymentsManager {
 				godotPaymentV3.callbackSuccess(ticket, signature, sku);
 
 				if (auto_consume) {
-					new ConsumeTask(mService, activity) {
+					new ConsumeTask(PaymentsManager.this, activity) {
 						@Override
 						protected void success(String ticket) {
 						}
@@ -243,7 +250,7 @@ public class PaymentsManager {
 			@Override
 			protected void success() {
 
-				new ConsumeTask(mService, activity) {
+				new ConsumeTask(PaymentsManager.this, activity) {
 					@Override
 					protected void success(String ticket) {
 						godotPaymentV3.callbackSuccess(ticket, null, sku);
@@ -275,7 +282,7 @@ public class PaymentsManager {
 	}
 
 	public void consume(final String sku) {
-		new ConsumeTask(mService, activity) {
+		new ConsumeTask(this, activity) {
 			@Override
 			protected void success(String ticket) {
 				godotPaymentV3.callbackSuccessProductMassConsumed(ticket, "", sku);
@@ -424,5 +431,25 @@ public class PaymentsManager {
 
 	public void setBaseSingleton(GodotPaymentV3 godotPaymentV3) {
 		this.godotPaymentV3 = godotPaymentV3;
+	}
+
+	@Override
+	public IInAppBillingService getBillingServiceWithTimeout() throws TimeoutException {
+		long startTimeMs = System.currentTimeMillis();
+		while (mService == null) {
+			if (System.currentTimeMillis() - startTimeMs >= SERVICE_CONNECT_TIMEOUT) {
+				throw new TimeoutException("InAppBillingService connection timeout");
+			}
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException ignored) {
+			}
+		}
+		return mService;
+	}
+
+	@Override
+	public IInAppBillingService getBillingService() {
+		return mService;
 	}
 }

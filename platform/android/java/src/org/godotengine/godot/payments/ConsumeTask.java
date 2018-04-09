@@ -30,21 +30,19 @@
 
 package org.godotengine.godot.payments;
 
-import com.android.vending.billing.IInAppBillingService;
-
 import android.content.Context;
 import android.os.AsyncTask;
-import android.os.RemoteException;
-import android.util.Log;
+
+import com.android.vending.billing.IInAppBillingService;
 
 abstract public class ConsumeTask {
 
 	private Context context;
 
-	private IInAppBillingService mService;
-	public ConsumeTask(IInAppBillingService mService, Context context) {
+	private InAppBillingServiceProvider mServiceProvider;
+	public ConsumeTask(InAppBillingServiceProvider serviceProvider, Context context) {
 		this.context = context;
-		this.mService = mService;
+		this.mServiceProvider = serviceProvider;
 	}
 
 	public void consume(final String sku) {
@@ -70,12 +68,13 @@ abstract public class ConsumeTask {
 			protected String doInBackground(String... params) {
 				try {
 					//Log.d("XXX", "Requesting to release item.");
-					int response = mService.consumePurchase(3, context.getPackageName(), token);
+					IInAppBillingService service = mServiceProvider.getBillingServiceWithTimeout();
+					int response = service.consumePurchase(3, context.getPackageName(), token);
 					//Log.d("XXX", "release response code: " + response);
 					if (response == 0 || response == 8) {
 						return null;
 					}
-				} catch (RemoteException e) {
+				} catch (Exception e) {
 					return e.getMessage();
 				}
 				return "Some error";
