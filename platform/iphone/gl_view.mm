@@ -186,16 +186,7 @@ void _stop_video() {
 }
 
 CGFloat _points_to_pixels(CGFloat points) {
-	float pixelPerInch;
-	if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
-		pixelPerInch = 132;
-	} else if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) {
-		pixelPerInch = 163;
-	} else {
-		pixelPerInch = 160;
-	}
-	CGFloat pointsPerInch = 72.0;
-	return (points / pointsPerInch * pixelPerInch);
+	return points * [UIScreen mainScreen].nativeScale;
 }
 
 @implementation GLView
