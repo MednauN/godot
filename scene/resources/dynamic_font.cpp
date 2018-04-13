@@ -701,6 +701,8 @@ void DynamicFont::_reload_cache() {
 		fallback_data_at_size.write[i] = fallbacks.write[i]->_get_dynamic_font_at_size(cache_id);
 		if (outline_cache_id.outline_size > 0)
 			fallback_outline_data_at_size.write[i] = fallbacks.write[i]->_get_dynamic_font_at_size(outline_cache_id);
+		if (outline_cache_id.outline_size > 0)
+			fallback_outline_data_at_size[i] = fallbacks[i]->_get_dynamic_font_at_size(outline_cache_id);
 	}
 
 	emit_changed();
@@ -906,6 +908,8 @@ void DynamicFont::add_fallback(const Ref<DynamicFontData> &p_data) {
 	fallback_data_at_size.push_back(fallbacks.write[fallbacks.size() - 1]->_get_dynamic_font_at_size(cache_id)); //const..
 	if (outline_cache_id.outline_size > 0)
 		fallback_outline_data_at_size.push_back(fallbacks.write[fallbacks.size() - 1]->_get_dynamic_font_at_size(outline_cache_id));
+	if (outline_cache_id.outline_size > 0)
+		fallback_outline_data_at_size.push_back(fallbacks[fallbacks.size() - 1]->_get_dynamic_font_at_size(outline_cache_id));
 
 	_change_notify();
 	emit_changed();
