@@ -131,26 +131,27 @@ layout(std140) uniform DirectionalLightData { //ubo:3
 #ifdef USE_VERTEX_LIGHTING
 //omni and spot
 
-struct LightData {
+// TODO workaround hack for Andreno 510, disable light structure in vertex shader
+//struct LightData {
 
-	highp vec4 light_pos_inv_radius;
-	mediump vec4 light_direction_attenuation;
-	mediump vec4 light_color_energy;
-	mediump vec4 light_params; // cone attenuation, angle, specular, shadow enabled,
-	mediump vec4 light_clamp;
-	mediump vec4 shadow_color_contact;
-	highp mat4 shadow_matrix;
-};
+// 	highp vec4 light_pos_inv_radius;
+// 	mediump vec4 light_direction_attenuation;
+// 	mediump vec4 light_color_energy;
+// 	mediump vec4 light_params; // cone attenuation, angle, specular, shadow enabled,
+// 	mediump vec4 light_clamp;
+// 	mediump vec4 shadow_color_contact;
+// 	highp mat4 shadow_matrix;
+// };
 
-layout(std140) uniform OmniLightData { //ubo:4
+// layout(std140) uniform OmniLightData { //ubo:4
 
-	LightData omni_lights[MAX_LIGHT_DATA_STRUCTS];
-};
+// 	LightData omni_lights[MAX_LIGHT_DATA_STRUCTS];
+// };
 
-layout(std140) uniform SpotLightData { //ubo:5
+// layout(std140) uniform SpotLightData { //ubo:5
 
-	LightData spot_lights[MAX_LIGHT_DATA_STRUCTS];
-};
+// 	LightData spot_lights[MAX_LIGHT_DATA_STRUCTS];
+// };
 
 #ifdef USE_FORWARD_LIGHTING
 
@@ -181,27 +182,27 @@ void light_compute(vec3 N, vec3 L, vec3 V, vec3 light_color, float roughness, in
 
 void light_process_omni(int idx, vec3 vertex, vec3 eye_vec, vec3 normal, float roughness, inout vec3 diffuse, inout vec3 specular) {
 
-	vec3 light_rel_vec = omni_lights[idx].light_pos_inv_radius.xyz - vertex;
-	float light_length = length(light_rel_vec);
-	float normalized_distance = light_length * omni_lights[idx].light_pos_inv_radius.w;
-	vec3 light_attenuation = vec3(pow(max(1.0 - normalized_distance, 0.0), omni_lights[idx].light_direction_attenuation.w));
+// 	vec3 light_rel_vec = omni_lights[idx].light_pos_inv_radius.xyz - vertex;
+// 	float light_length = length(light_rel_vec);
+// 	float normalized_distance = light_length * omni_lights[idx].light_pos_inv_radius.w;
+// 	vec3 light_attenuation = vec3(pow(max(1.0 - normalized_distance, 0.0), omni_lights[idx].light_direction_attenuation.w));
 
-	light_compute(normal, normalize(light_rel_vec), eye_vec, omni_lights[idx].light_color_energy.rgb * light_attenuation, roughness, diffuse, specular);
+// 	light_compute(normal, normalize(light_rel_vec), eye_vec, omni_lights[idx].light_color_energy.rgb * light_attenuation, roughness, diffuse, specular);
 }
 
 void light_process_spot(int idx, vec3 vertex, vec3 eye_vec, vec3 normal, float roughness, inout vec3 diffuse, inout vec3 specular) {
 
-	vec3 light_rel_vec = spot_lights[idx].light_pos_inv_radius.xyz - vertex;
-	float light_length = length(light_rel_vec);
-	float normalized_distance = light_length * spot_lights[idx].light_pos_inv_radius.w;
-	vec3 light_attenuation = vec3(pow(max(1.0 - normalized_distance, 0.001), spot_lights[idx].light_direction_attenuation.w));
-	vec3 spot_dir = spot_lights[idx].light_direction_attenuation.xyz;
-	float spot_cutoff = spot_lights[idx].light_params.y;
-	float scos = max(dot(-normalize(light_rel_vec), spot_dir), spot_cutoff);
-	float spot_rim = (1.0 - scos) / (1.0 - spot_cutoff);
-	light_attenuation *= 1.0 - pow(max(spot_rim, 0.001), spot_lights[idx].light_params.x);
+// 	vec3 light_rel_vec = spot_lights[idx].light_pos_inv_radius.xyz - vertex;
+// 	float light_length = length(light_rel_vec);
+// 	float normalized_distance = light_length * spot_lights[idx].light_pos_inv_radius.w;
+// 	vec3 light_attenuation = vec3(pow(max(1.0 - normalized_distance, 0.001), spot_lights[idx].light_direction_attenuation.w));
+// 	vec3 spot_dir = spot_lights[idx].light_direction_attenuation.xyz;
+// 	float spot_cutoff = spot_lights[idx].light_params.y;
+// 	float scos = max(dot(-normalize(light_rel_vec), spot_dir), spot_cutoff);
+// 	float spot_rim = (1.0 - scos) / (1.0 - spot_cutoff);
+// 	light_attenuation *= 1.0 - pow(max(spot_rim, 0.001), spot_lights[idx].light_params.x);
 
-	light_compute(normal, normalize(light_rel_vec), eye_vec, spot_lights[idx].light_color_energy.rgb * light_attenuation, roughness, diffuse, specular);
+// 	light_compute(normal, normalize(light_rel_vec), eye_vec, spot_lights[idx].light_color_energy.rgb * light_attenuation, roughness, diffuse, specular);
 }
 
 #endif
@@ -713,44 +714,45 @@ in vec4 specular_light_interp;
 #endif
 // omni and spot
 
-struct LightData {
+// TODO workaround hack for Andreno 510, disable light structure in fragment shader
+// struct LightData {
 
-	highp vec4 light_pos_inv_radius;
-	mediump vec4 light_direction_attenuation;
-	mediump vec4 light_color_energy;
-	mediump vec4 light_params; // cone attenuation, angle, specular, shadow enabled,
-	mediump vec4 light_clamp;
-	mediump vec4 shadow_color_contact;
-	highp mat4 shadow_matrix;
-};
+// 	highp vec4 light_pos_inv_radius;
+// 	mediump vec4 light_direction_attenuation;
+// 	mediump vec4 light_color_energy;
+// 	mediump vec4 light_params; // cone attenuation, angle, specular, shadow enabled,
+// 	mediump vec4 light_clamp;
+// 	mediump vec4 shadow_color_contact;
+// 	highp mat4 shadow_matrix;
+// };
 
-layout(std140) uniform OmniLightData { // ubo:4
+// layout(std140) uniform OmniLightData { // ubo:4
 
-	LightData omni_lights[MAX_LIGHT_DATA_STRUCTS];
-};
+// 	LightData omni_lights[MAX_LIGHT_DATA_STRUCTS];
+// };
 
-layout(std140) uniform SpotLightData { // ubo:5
+// layout(std140) uniform SpotLightData { // ubo:5
 
-	LightData spot_lights[MAX_LIGHT_DATA_STRUCTS];
-};
+// 	LightData spot_lights[MAX_LIGHT_DATA_STRUCTS];
+// };
 
 uniform highp sampler2DShadow shadow_atlas; // texunit:-5
 
-struct ReflectionData {
+// struct ReflectionData {
 
-	mediump vec4 box_extents;
-	mediump vec4 box_offset;
-	mediump vec4 params; // intensity, 0, interior , boxproject
-	mediump vec4 ambient; // ambient color, energy
-	mediump vec4 atlas_clamp;
-	highp mat4 local_matrix; // up to here for spot and omni, rest is for directional
-	// notes: for ambientblend, use distance to edge to blend between already existing global environment
-};
+// 	mediump vec4 box_extents;
+// 	mediump vec4 box_offset;
+// 	mediump vec4 params; // intensity, 0, interior , boxproject
+// 	mediump vec4 ambient; // ambient color, energy
+// 	mediump vec4 atlas_clamp;
+// 	highp mat4 local_matrix; // up to here for spot and omni, rest is for directional
+// 	// notes: for ambientblend, use distance to edge to blend between already existing global environment
+// };
 
-layout(std140) uniform ReflectionProbeData { //ubo:6
+// layout(std140) uniform ReflectionProbeData { //ubo:6
 
-	ReflectionData reflections[MAX_REFLECTION_DATA_STRUCTS];
-};
+// 	ReflectionData reflections[MAX_REFLECTION_DATA_STRUCTS];
+// };
 uniform mediump sampler2D reflection_atlas; // texunit:-3
 
 #ifdef USE_FORWARD_LIGHTING
@@ -1193,197 +1195,197 @@ vec3 light_transmittance(float translucency,vec3 light_vec, vec3 normal, vec3 po
 
 void light_process_omni(int idx, vec3 vertex, vec3 eye_vec, vec3 normal, vec3 binormal, vec3 tangent, vec3 albedo, vec3 transmission, float roughness, float metallic, float specular, float rim, float rim_tint, float clearcoat, float clearcoat_gloss, float anisotropy, float p_blob_intensity, inout vec3 diffuse_light, inout vec3 specular_light) {
 
-	vec3 light_rel_vec = omni_lights[idx].light_pos_inv_radius.xyz - vertex;
-	float light_length = length(light_rel_vec);
-	float normalized_distance = light_length * omni_lights[idx].light_pos_inv_radius.w;
-	float omni_attenuation = pow(max(1.0 - normalized_distance, 0.0), omni_lights[idx].light_direction_attenuation.w);
-	vec3 light_attenuation = vec3(omni_attenuation);
+// 	vec3 light_rel_vec = omni_lights[idx].light_pos_inv_radius.xyz - vertex;
+// 	float light_length = length(light_rel_vec);
+// 	float normalized_distance = light_length * omni_lights[idx].light_pos_inv_radius.w;
+// 	float omni_attenuation = pow(max(1.0 - normalized_distance, 0.0), omni_lights[idx].light_direction_attenuation.w);
+// 	vec3 light_attenuation = vec3(omni_attenuation);
 
 #if !defined(SHADOWS_DISABLED)
-	if (omni_lights[idx].light_params.w > 0.5) {
-		// there is a shadowmap
+// 	if (omni_lights[idx].light_params.w > 0.5) {
+// 		// there is a shadowmap
 
-		highp vec3 splane = (omni_lights[idx].shadow_matrix * vec4(vertex, 1.0)).xyz;
-		float shadow_len = length(splane);
-		splane = normalize(splane);
-		vec4 clamp_rect = omni_lights[idx].light_clamp;
+// 		highp vec3 splane = (omni_lights[idx].shadow_matrix * vec4(vertex, 1.0)).xyz;
+// 		float shadow_len = length(splane);
+// 		splane = normalize(splane);
+// 		vec4 clamp_rect = omni_lights[idx].light_clamp;
 
-		if (splane.z >= 0.0) {
+// 		if (splane.z >= 0.0) {
 
-			splane.z += 1.0;
+// 			splane.z += 1.0;
 
-			clamp_rect.y += clamp_rect.w;
+// 			clamp_rect.y += clamp_rect.w;
 
-		} else {
+// 		} else {
 
-			splane.z = 1.0 - splane.z;
+// 			splane.z = 1.0 - splane.z;
 
-			/*
-			if (clamp_rect.z < clamp_rect.w) {
-				clamp_rect.x += clamp_rect.z;
-			} else {
-				clamp_rect.y += clamp_rect.w;
-			}
-			*/
-		}
+// 			/*
+// 			if (clamp_rect.z < clamp_rect.w) {
+// 				clamp_rect.x += clamp_rect.z;
+// 			} else {
+// 				clamp_rect.y += clamp_rect.w;
+// 			}
+// 			*/
+// 		}
 
-		splane.xy /= splane.z;
-		splane.xy = splane.xy * 0.5 + 0.5;
-		splane.z = shadow_len * omni_lights[idx].light_pos_inv_radius.w;
+// 		splane.xy /= splane.z;
+// 		splane.xy = splane.xy * 0.5 + 0.5;
+// 		splane.z = shadow_len * omni_lights[idx].light_pos_inv_radius.w;
 
-		splane.xy = clamp_rect.xy + splane.xy * clamp_rect.zw;
-		float shadow = sample_shadow(shadow_atlas, shadow_atlas_pixel_size, splane.xy, splane.z, clamp_rect);
+// 		splane.xy = clamp_rect.xy + splane.xy * clamp_rect.zw;
+// 		float shadow = sample_shadow(shadow_atlas, shadow_atlas_pixel_size, splane.xy, splane.z, clamp_rect);
 
 #ifdef USE_CONTACT_SHADOWS
 
-		if (shadow > 0.01 && omni_lights[idx].shadow_color_contact.a > 0.0) {
+// 		if (shadow > 0.01 && omni_lights[idx].shadow_color_contact.a > 0.0) {
 
-			float contact_shadow = contact_shadow_compute(vertex, normalize(light_rel_vec), min(light_length, omni_lights[idx].shadow_color_contact.a));
-			shadow = min(shadow, contact_shadow);
-		}
+// 			float contact_shadow = contact_shadow_compute(vertex, normalize(light_rel_vec), min(light_length, omni_lights[idx].shadow_color_contact.a));
+// 			shadow = min(shadow, contact_shadow);
+// 		}
 #endif
-		light_attenuation *= mix(omni_lights[idx].shadow_color_contact.rgb, vec3(1.0), shadow);
-	}
+// 		light_attenuation *= mix(omni_lights[idx].shadow_color_contact.rgb, vec3(1.0), shadow);
+// 	}
 #endif //SHADOWS_DISABLED
-	light_compute(normal, normalize(light_rel_vec), eye_vec, binormal, tangent, omni_lights[idx].light_color_energy.rgb, light_attenuation, albedo, transmission, omni_lights[idx].light_params.z * p_blob_intensity, roughness, metallic, specular, rim * omni_attenuation, rim_tint, clearcoat, clearcoat_gloss, anisotropy, diffuse_light, specular_light);
+// 	light_compute(normal, normalize(light_rel_vec), eye_vec, binormal, tangent, omni_lights[idx].light_color_energy.rgb, light_attenuation, albedo, transmission, omni_lights[idx].light_params.z * p_blob_intensity, roughness, metallic, specular, rim * omni_attenuation, rim_tint, clearcoat, clearcoat_gloss, anisotropy, diffuse_light, specular_light);
 }
 
 void light_process_spot(int idx, vec3 vertex, vec3 eye_vec, vec3 normal, vec3 binormal, vec3 tangent, vec3 albedo, vec3 transmission, float roughness, float metallic, float specular, float rim, float rim_tint, float clearcoat, float clearcoat_gloss, float anisotropy, float p_blob_intensity, inout vec3 diffuse_light, inout vec3 specular_light) {
 
-	vec3 light_rel_vec = spot_lights[idx].light_pos_inv_radius.xyz - vertex;
-	float light_length = length(light_rel_vec);
-	float normalized_distance = light_length * spot_lights[idx].light_pos_inv_radius.w;
-	float spot_attenuation = pow(max(1.0 - normalized_distance, 0.001), spot_lights[idx].light_direction_attenuation.w);
-	vec3 spot_dir = spot_lights[idx].light_direction_attenuation.xyz;
-	float spot_cutoff = spot_lights[idx].light_params.y;
-	float scos = max(dot(-normalize(light_rel_vec), spot_dir), spot_cutoff);
-	float spot_rim = max(0.0001, (1.0 - scos) / (1.0 - spot_cutoff));
-	spot_attenuation *= 1.0 - pow(spot_rim, spot_lights[idx].light_params.x);
-	vec3 light_attenuation = vec3(spot_attenuation);
+// 	vec3 light_rel_vec = spot_lights[idx].light_pos_inv_radius.xyz - vertex;
+// 	float light_length = length(light_rel_vec);
+// 	float normalized_distance = light_length * spot_lights[idx].light_pos_inv_radius.w;
+// 	float spot_attenuation = pow(max(1.0 - normalized_distance, 0.001), spot_lights[idx].light_direction_attenuation.w);
+// 	vec3 spot_dir = spot_lights[idx].light_direction_attenuation.xyz;
+// 	float spot_cutoff = spot_lights[idx].light_params.y;
+// 	float scos = max(dot(-normalize(light_rel_vec), spot_dir), spot_cutoff);
+// 	float spot_rim = max(0.0001, (1.0 - scos) / (1.0 - spot_cutoff));
+// 	spot_attenuation *= 1.0 - pow(spot_rim, spot_lights[idx].light_params.x);
+// 	vec3 light_attenuation = vec3(spot_attenuation);
 
 #if !defined(SHADOWS_DISABLED)
-	if (spot_lights[idx].light_params.w > 0.5) {
-		//there is a shadowmap
-		highp vec4 splane = (spot_lights[idx].shadow_matrix * vec4(vertex, 1.0));
-		splane.xyz /= splane.w;
+// 	if (spot_lights[idx].light_params.w > 0.5) {
+// 		//there is a shadowmap
+// 		highp vec4 splane = (spot_lights[idx].shadow_matrix * vec4(vertex, 1.0));
+// 		splane.xyz /= splane.w;
 
-		float shadow = sample_shadow(shadow_atlas, shadow_atlas_pixel_size, splane.xy, splane.z, spot_lights[idx].light_clamp);
+// 		float shadow = sample_shadow(shadow_atlas, shadow_atlas_pixel_size, splane.xy, splane.z, spot_lights[idx].light_clamp);
 
 #ifdef USE_CONTACT_SHADOWS
-		if (shadow > 0.01 && spot_lights[idx].shadow_color_contact.a > 0.0) {
+// 		if (shadow > 0.01 && spot_lights[idx].shadow_color_contact.a > 0.0) {
 
-			float contact_shadow = contact_shadow_compute(vertex, normalize(light_rel_vec), min(light_length, spot_lights[idx].shadow_color_contact.a));
-			shadow = min(shadow, contact_shadow);
-		}
+// 			float contact_shadow = contact_shadow_compute(vertex, normalize(light_rel_vec), min(light_length, spot_lights[idx].shadow_color_contact.a));
+// 			shadow = min(shadow, contact_shadow);
+// 		}
 #endif
-		light_attenuation *= mix(spot_lights[idx].shadow_color_contact.rgb, vec3(1.0), shadow);
-	}
+// 		light_attenuation *= mix(spot_lights[idx].shadow_color_contact.rgb, vec3(1.0), shadow);
+//	}
 #endif //SHADOWS_DISABLED
 
-	light_compute(normal, normalize(light_rel_vec), eye_vec, binormal, tangent, spot_lights[idx].light_color_energy.rgb, light_attenuation, albedo, transmission, spot_lights[idx].light_params.z * p_blob_intensity, roughness, metallic, specular, rim * spot_attenuation, rim_tint, clearcoat, clearcoat_gloss, anisotropy, diffuse_light, specular_light);
+// 	light_compute(normal, normalize(light_rel_vec), eye_vec, binormal, tangent, spot_lights[idx].light_color_energy.rgb, light_attenuation, albedo, transmission, spot_lights[idx].light_params.z * p_blob_intensity, roughness, metallic, specular, rim * spot_attenuation, rim_tint, clearcoat, clearcoat_gloss, anisotropy, diffuse_light, specular_light);
 }
 
 void reflection_process(int idx, vec3 vertex, vec3 normal, vec3 binormal, vec3 tangent, float roughness, float anisotropy, vec3 ambient, vec3 skybox, inout highp vec4 reflection_accum, inout highp vec4 ambient_accum) {
 
-	vec3 ref_vec = normalize(reflect(vertex, normal));
-	vec3 local_pos = (reflections[idx].local_matrix * vec4(vertex, 1.0)).xyz;
-	vec3 box_extents = reflections[idx].box_extents.xyz;
+// 	vec3 ref_vec = normalize(reflect(vertex, normal));
+// 	vec3 local_pos = (reflections[idx].local_matrix * vec4(vertex, 1.0)).xyz;
+// 	vec3 box_extents = reflections[idx].box_extents.xyz;
 
-	if (any(greaterThan(abs(local_pos), box_extents))) { //out of the reflection box
-		return;
-	}
+// 	if (any(greaterThan(abs(local_pos), box_extents))) { //out of the reflection box
+// 		return;
+// 	}
 
-	vec3 inner_pos = abs(local_pos / box_extents);
-	float blend = max(inner_pos.x, max(inner_pos.y, inner_pos.z));
-	//make blend more rounded
-	blend = mix(length(inner_pos), blend, blend);
-	blend *= blend;
-	blend = max(0.0, 1.0 - blend);
+// 	vec3 inner_pos = abs(local_pos / box_extents);
+// 	float blend = max(inner_pos.x, max(inner_pos.y, inner_pos.z));
+// 	//make blend more rounded
+// 	blend = mix(length(inner_pos), blend, blend);
+// 	blend *= blend;
+// 	blend = max(0.0, 1.0 - blend);
 
-	if (reflections[idx].params.x > 0.0) { // compute reflection
+// 	if (reflections[idx].params.x > 0.0) { // compute reflection
 
-		vec3 local_ref_vec = (reflections[idx].local_matrix * vec4(ref_vec, 0.0)).xyz;
+// 		vec3 local_ref_vec = (reflections[idx].local_matrix * vec4(ref_vec, 0.0)).xyz;
 
-		if (reflections[idx].params.w > 0.5) { //box project
+// 		if (reflections[idx].params.w > 0.5) { //box project
 
-			vec3 nrdir = normalize(local_ref_vec);
-			vec3 rbmax = (box_extents - local_pos) / nrdir;
-			vec3 rbmin = (-box_extents - local_pos) / nrdir;
+// 			vec3 nrdir = normalize(local_ref_vec);
+// 			vec3 rbmax = (box_extents - local_pos) / nrdir;
+// 			vec3 rbmin = (-box_extents - local_pos) / nrdir;
 
-			vec3 rbminmax = mix(rbmin, rbmax, greaterThan(nrdir, vec3(0.0, 0.0, 0.0)));
+// 			vec3 rbminmax = mix(rbmin, rbmax, greaterThan(nrdir, vec3(0.0, 0.0, 0.0)));
 
-			float fa = min(min(rbminmax.x, rbminmax.y), rbminmax.z);
-			vec3 posonbox = local_pos + nrdir * fa;
-			local_ref_vec = posonbox - reflections[idx].box_offset.xyz;
-		}
+// 			float fa = min(min(rbminmax.x, rbminmax.y), rbminmax.z);
+// 			vec3 posonbox = local_pos + nrdir * fa;
+// 			local_ref_vec = posonbox - reflections[idx].box_offset.xyz;
+// 		}
 
-		vec4 clamp_rect = reflections[idx].atlas_clamp;
-		vec3 norm = normalize(local_ref_vec);
-		norm.xy /= 1.0 + abs(norm.z);
-		norm.xy = norm.xy * vec2(0.5, 0.25) + vec2(0.5, 0.25);
-		if (norm.z > 0.0) {
-			norm.y = 0.5 - norm.y + 0.5;
-		}
+// 		vec4 clamp_rect = reflections[idx].atlas_clamp;
+// 		vec3 norm = normalize(local_ref_vec);
+// 		norm.xy /= 1.0 + abs(norm.z);
+// 		norm.xy = norm.xy * vec2(0.5, 0.25) + vec2(0.5, 0.25);
+// 		if (norm.z > 0.0) {
+// 			norm.y = 0.5 - norm.y + 0.5;
+// 		}
 
-		vec2 atlas_uv = norm.xy * clamp_rect.zw + clamp_rect.xy;
-		atlas_uv = clamp(atlas_uv, clamp_rect.xy, clamp_rect.xy + clamp_rect.zw);
+// 		vec2 atlas_uv = norm.xy * clamp_rect.zw + clamp_rect.xy;
+// 		atlas_uv = clamp(atlas_uv, clamp_rect.xy, clamp_rect.xy + clamp_rect.zw);
 
-		highp vec4 reflection;
-		reflection.rgb = textureLod(reflection_atlas, atlas_uv, roughness * 5.0).rgb;
+// 		highp vec4 reflection;
+// 		reflection.rgb = textureLod(reflection_atlas, atlas_uv, roughness * 5.0).rgb;
 
-		if (reflections[idx].params.z < 0.5) {
-			reflection.rgb = mix(skybox, reflection.rgb, blend);
-		}
-		reflection.rgb *= reflections[idx].params.x;
-		reflection.a = blend;
-		reflection.rgb *= reflection.a;
+// 		if (reflections[idx].params.z < 0.5) {
+// 			reflection.rgb = mix(skybox, reflection.rgb, blend);
+// 		}
+// 		reflection.rgb *= reflections[idx].params.x;
+// 		reflection.a = blend;
+// 		reflection.rgb *= reflection.a;
 
-		reflection_accum += reflection;
-	}
+// 		reflection_accum += reflection;
+// 	}
 #if !defined(USE_LIGHTMAP) && !defined(USE_LIGHTMAP_CAPTURE)
-	if (reflections[idx].ambient.a > 0.0) { //compute ambient using skybox
+// 	if (reflections[idx].ambient.a > 0.0) { //compute ambient using skybox
 
-		vec3 local_amb_vec = (reflections[idx].local_matrix * vec4(normal, 0.0)).xyz;
+// 		vec3 local_amb_vec = (reflections[idx].local_matrix * vec4(normal, 0.0)).xyz;
 
-		vec3 splane = normalize(local_amb_vec);
-		vec4 clamp_rect = reflections[idx].atlas_clamp;
+// 		vec3 splane = normalize(local_amb_vec);
+// 		vec4 clamp_rect = reflections[idx].atlas_clamp;
 
-		splane.z *= -1.0;
-		if (splane.z >= 0.0) {
-			splane.z += 1.0;
-			clamp_rect.y += clamp_rect.w;
-		} else {
-			splane.z = 1.0 - splane.z;
-			splane.y = -splane.y;
-		}
+// 		splane.z *= -1.0;
+// 		if (splane.z >= 0.0) {
+// 			splane.z += 1.0;
+// 			clamp_rect.y += clamp_rect.w;
+// 		} else {
+// 			splane.z = 1.0 - splane.z;
+// 			splane.y = -splane.y;
+// 		}
 
-		splane.xy /= splane.z;
-		splane.xy = splane.xy * 0.5 + 0.5;
+// 		splane.xy /= splane.z;
+// 		splane.xy = splane.xy * 0.5 + 0.5;
 
-		splane.xy = splane.xy * clamp_rect.zw + clamp_rect.xy;
-		splane.xy = clamp(splane.xy, clamp_rect.xy, clamp_rect.xy + clamp_rect.zw);
+// 		splane.xy = splane.xy * clamp_rect.zw + clamp_rect.xy;
+// 		splane.xy = clamp(splane.xy, clamp_rect.xy, clamp_rect.xy + clamp_rect.zw);
 
-		highp vec4 ambient_out;
-		ambient_out.a = blend;
-		ambient_out.rgb = textureLod(reflection_atlas, splane.xy, 5.0).rgb;
-		ambient_out.rgb = mix(reflections[idx].ambient.rgb, ambient_out.rgb, reflections[idx].ambient.a);
-		if (reflections[idx].params.z < 0.5) {
-			ambient_out.rgb = mix(ambient, ambient_out.rgb, blend);
-		}
+// 		highp vec4 ambient_out;
+// 		ambient_out.a = blend;
+// 		ambient_out.rgb = textureLod(reflection_atlas, splane.xy, 5.0).rgb;
+// 		ambient_out.rgb = mix(reflections[idx].ambient.rgb, ambient_out.rgb, reflections[idx].ambient.a);
+// 		if (reflections[idx].params.z < 0.5) {
+// 			ambient_out.rgb = mix(ambient, ambient_out.rgb, blend);
+// 		}
 
-		ambient_out.rgb *= ambient_out.a;
-		ambient_accum += ambient_out;
-	} else {
+// 		ambient_out.rgb *= ambient_out.a;
+// 		ambient_accum += ambient_out;
+// 	} else {
 
-		highp vec4 ambient_out;
-		ambient_out.a = blend;
-		ambient_out.rgb = reflections[idx].ambient.rgb;
-		if (reflections[idx].params.z < 0.5) {
-			ambient_out.rgb = mix(ambient, ambient_out.rgb, blend);
-		}
-		ambient_out.rgb *= ambient_out.a;
-		ambient_accum += ambient_out;
-	}
+// 		highp vec4 ambient_out;
+// 		ambient_out.a = blend;
+// 		ambient_out.rgb = reflections[idx].ambient.rgb;
+// 		if (reflections[idx].params.z < 0.5) {
+// 			ambient_out.rgb = mix(ambient, ambient_out.rgb, blend);
+// 		}
+// 		ambient_out.rgb *= ambient_out.a;
+// 		ambient_accum += ambient_out;
+// 	}
 #endif
 }
 

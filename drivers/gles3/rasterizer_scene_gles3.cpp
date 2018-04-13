@@ -2194,7 +2194,7 @@ void RasterizerSceneGLES3::_render_list(RenderList::Element **p_elements, int p_
 		}
 
 		if (!(e->sort_key & SORT_KEY_UNSHADED_FLAG) && !p_directional_add && !p_shadow) {
-			_setup_light(e, p_view_transform);
+			//_setup_light(e, p_view_transform);
 		}
 
 		if (e->owner != prev_owner || prev_base_type != e->instance->base_type || prev_geometry != e->geometry) {
@@ -4136,8 +4136,16 @@ void RasterizerSceneGLES3::render_scene(const Transform &p_cam_transform, const 
 		state.using_contact_shadows = false;
 	}
 
-	_setup_lights(p_light_cull_result, p_light_cull_count, p_cam_transform.affine_inverse(), p_cam_projection, p_shadow_atlas);
-	_setup_reflections(p_reflection_probe_cull_result, p_reflection_probe_cull_count, p_cam_transform.affine_inverse(), p_cam_projection, p_reflection_atlas, env);
+	// init empty light state
+	state.reflection_probe_count = 0;
+	state.omni_light_count = 0;
+	state.spot_light_count = 0;
+	state.directional_light_count = 0;
+
+	directional_light = NULL;
+
+	//_setup_lights(p_light_cull_result, p_light_cull_count, p_cam_transform.affine_inverse(), p_cam_projection, p_shadow_atlas);
+	//_setup_reflections(p_reflection_probe_cull_result, p_reflection_probe_cull_count, p_cam_transform.affine_inverse(), p_cam_projection, p_reflection_atlas, env);
 
 	bool use_mrt = false;
 
@@ -4960,20 +4968,20 @@ void RasterizerSceneGLES3::initialize() {
 		state.spot_array_tmp = (uint8_t *)memalloc(ubo_light_size * state.max_ubo_lights);
 		state.omni_array_tmp = (uint8_t *)memalloc(ubo_light_size * state.max_ubo_lights);
 
-		glGenBuffers(1, &state.spot_array_ubo);
-		glBindBuffer(GL_UNIFORM_BUFFER, state.spot_array_ubo);
-		glBufferData(GL_UNIFORM_BUFFER, ubo_light_size * state.max_ubo_lights, NULL, GL_DYNAMIC_DRAW);
-		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+		// glGenBuffers(1, &state.spot_array_ubo);
+		// glBindBuffer(GL_UNIFORM_BUFFER, state.spot_array_ubo);
+		// glBufferData(GL_UNIFORM_BUFFER, ubo_light_size * state.max_ubo_lights, NULL, GL_DYNAMIC_DRAW);
+		// glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-		glGenBuffers(1, &state.omni_array_ubo);
-		glBindBuffer(GL_UNIFORM_BUFFER, state.omni_array_ubo);
-		glBufferData(GL_UNIFORM_BUFFER, ubo_light_size * state.max_ubo_lights, NULL, GL_DYNAMIC_DRAW);
-		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+		// glGenBuffers(1, &state.omni_array_ubo);
+		// glBindBuffer(GL_UNIFORM_BUFFER, state.omni_array_ubo);
+		// glBufferData(GL_UNIFORM_BUFFER, ubo_light_size * state.max_ubo_lights, NULL, GL_DYNAMIC_DRAW);
+		// glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-		glGenBuffers(1, &state.directional_ubo);
-		glBindBuffer(GL_UNIFORM_BUFFER, state.directional_ubo);
-		glBufferData(GL_UNIFORM_BUFFER, sizeof(LightDataUBO), NULL, GL_DYNAMIC_DRAW);
-		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+		// glGenBuffers(1, &state.directional_ubo);
+		// glBindBuffer(GL_UNIFORM_BUFFER, state.directional_ubo);
+		// glBufferData(GL_UNIFORM_BUFFER, sizeof(LightDataUBO), NULL, GL_DYNAMIC_DRAW);
+		// glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 		state.max_forward_lights_per_object = 8;
 
@@ -4984,10 +4992,10 @@ void RasterizerSceneGLES3::initialize() {
 
 		state.reflection_array_tmp = (uint8_t *)memalloc(sizeof(ReflectionProbeDataUBO) * state.max_ubo_reflections);
 
-		glGenBuffers(1, &state.reflection_array_ubo);
-		glBindBuffer(GL_UNIFORM_BUFFER, state.reflection_array_ubo);
-		glBufferData(GL_UNIFORM_BUFFER, sizeof(ReflectionProbeDataUBO) * state.max_ubo_reflections, NULL, GL_DYNAMIC_DRAW);
-		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+		// glGenBuffers(1, &state.reflection_array_ubo);
+		// glBindBuffer(GL_UNIFORM_BUFFER, state.reflection_array_ubo);
+		// glBufferData(GL_UNIFORM_BUFFER, sizeof(ReflectionProbeDataUBO) * state.max_ubo_reflections, NULL, GL_DYNAMIC_DRAW);
+		// glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 		state.scene_shader.add_custom_define("#define MAX_REFLECTION_DATA_STRUCTS " + itos(state.max_ubo_reflections) + "\n");
 
