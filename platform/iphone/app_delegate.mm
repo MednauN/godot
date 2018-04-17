@@ -36,6 +36,8 @@
 #include "main/main.h"
 #include "os_iphone.h"
 
+#import "modules/facebook/ios/FBSDKCoreKit.framework/Headers/FBSDKCoreKit.h"
+
 #import "GameController/GameController.h"
 
 #define kFilteringFactor 0.1
@@ -693,6 +695,13 @@ static int frame_count = 0;
 			on_focus_in(view_controller, &is_focus_out);
 		}
 	}
+};
+
+- (BOOL)application:(UIApplication *)application
+				  openURL:(NSURL *)url
+		sourceApplication:(NSString *)sourceApplication
+			   annotation:(id)annotation {
+	return [super application:application openURL:url sourceApplication:sourceApplication annotation:annotation];
 };
 
 - (void)applicationWillTerminate:(UIApplication *)application {
