@@ -792,8 +792,8 @@ Error GDScript::load_source_code(const String &p_path) {
 	Error err;
 	FileAccess *f = FileAccess::open(p_path, FileAccess::READ, &err);
 	if (err) {
-
-		ERR_FAIL_COND_V(err, err);
+		ERR_PRINTS("Cannot open file: '" + p_path + "'");
+		return err;
 	}
 
 	int len = f->get_len();
