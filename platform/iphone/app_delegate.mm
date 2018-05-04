@@ -701,7 +701,9 @@ static int frame_count = 0;
 				  openURL:(NSURL *)url
 		sourceApplication:(NSString *)sourceApplication
 			   annotation:(id)annotation {
-	return [super application:application openURL:url sourceApplication:sourceApplication annotation:annotation];
+	if ([[super class] respondsToSelector:@selector(application:openURL:sourceApplication:annotation:)])
+		return [super application:application openURL:url sourceApplication:sourceApplication annotation:annotation];
+	return NO;
 };
 
 - (void)applicationWillTerminate:(UIApplication *)application {
