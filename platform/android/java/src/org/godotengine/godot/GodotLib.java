@@ -71,4 +71,5 @@ public class GodotLib {
 	public static native void calldeferred(int p_ID, String p_method, Object[] p_params);
 
 	public static native void setVirtualKeyboardHeight(int p_height);
+	public static native void imeTextCallback(String p_text, int p_selection_location, int p_selection_length);
 }

@@ -1452,6 +1452,13 @@ void TextEdit::_notification(int p_what) {
 
 void TextEdit::_ime_text_callback(void *p_self, String p_text, Point2 p_selection) {
 	TextEdit *self = (TextEdit *)p_self;
+#if defined(IPHONE_ENABLED) || defined(ANDROID_ENABLED)
+	if (GLOBAL_DEF("gui/mobile/use_native_text_input", false)) {
+		self->set_text(p_text);
+		self->release_focus();
+		return;
+	}
+#endif
 	self->ime_text = p_text;
 	self->ime_selection = p_selection;
 	self->update();
@@ -6232,6 +6239,7 @@ void TextEdit::_bind_methods() {
 	BIND_ENUM_CONSTANT(MENU_MAX);
 
 	GLOBAL_DEF("gui/timers/text_edit_idle_detect_sec", 3);
+	GLOBAL_DEF("gui/mobile/use_native_text_input", false);
 }
 
 TextEdit::TextEdit() {

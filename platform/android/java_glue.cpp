@@ -758,6 +758,11 @@ JNIEXPORT void JNICALL Java_org_godotengine_godot_GodotLib_setVirtualKeyboardHei
 	virtual_keyboard_height = p_height;
 }
 
+JNIEXPORT void JNICALL Java_org_godotengine_godot_GodotLib_imeTextCallback(JNIEnv *env, jobject obj, jstring p_text, jint p_selection_location, jint p_selection_length) {
+	String text = env->GetStringUTFChars(p_text, NULL);
+	os_android->call_ime_text_callback(text, Point2(p_selection_location, p_selection_length));
+}
+
 JNIEXPORT void JNICALL Java_org_godotengine_godot_GodotLib_initialize(JNIEnv *env, jobject obj, jobject activity, jboolean p_need_reload_hook, jobject p_asset_manager, jboolean p_use_apk_expansion) {
 
 	initialized = true;

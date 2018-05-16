@@ -34,6 +34,7 @@
 #include "core/project_settings.h"
 #include "os_iphone.h"
 #include "servers/audio_server.h"
+#include "translation.h"
 
 #import <OpenGLES/EAGLDrawable.h>
 #import <QuartzCore/QuartzCore.h>
@@ -526,17 +527,56 @@ static void clear_touches() {
 };
 
 - (BOOL)canBecomeFirstResponder {
-	return YES;
+	return !GLOBAL_DEF("gui/mobile/use_native_text_input", false);
 };
+
+- (void)updateTextViewHeight:(int)height {
+	if (textViewContainer) {
+		textViewContainer.frame = CGRectMake(0, 0, self.frame.size.width, height);
+		[textCloseButton sizeToFit];
+		CGSize buttonSize = textCloseButton.frame.size;
+		textCloseButton.frame = CGRectMake(textViewContainer.frame.size.width - buttonSize.width - 5, 0, buttonSize.width + 5, textViewContainer.frame.size.height);
+		textView.frame = CGRectMake(0, 0, textViewContainer.frame.size.width - buttonSize.width - 5, height);
+	}
+}
 
 - (void)open_keyboard {
 	//keyboard_text = p_existing;
-	[self becomeFirstResponder];
+	if ([self canBecomeFirstResponder]) {
+		[self becomeFirstResponder];
+	}
+	else if (!textViewContainer) {
+		NSLog(@"Native text input enabled, creating view container");
+		textViewContainer = [[UIView alloc] initWithFrame: self.frame];
+		textViewContainer.backgroundColor = [UIColor whiteColor];
+		[self addSubview:textViewContainer];
+
+		textCloseButton = [UIButton buttonWithType:UIButtonTypeSystem];
+		String strButtonTitle = TranslationServer::get_singleton()->translate("Done");
+		NSString *buttonTitle = [[[NSString alloc] initWithUTF8String:strButtonTitle.utf8().get_data()] autorelease];
+		textCloseButton.titleLabel.font = [UIFont systemFontOfSize:20];
+		[textCloseButton setTitle:buttonTitle forState:UIControlStateNormal];
+		[textCloseButton addTarget:self action:@selector(onDoneButtonPressed:) forControlEvents:UIControlEventTouchUpInside];
+		[textViewContainer addSubview:textCloseButton];
+
+		textView = [[UITextView alloc] init];
+		textView.delegate = self;
+		textView.font = [UIFont systemFontOfSize:16];
+		textView.text = [[[NSString alloc] initWithUTF8String:keyboard_text.utf8().get_data()] autorelease];
+		[textViewContainer addSubview:textView];
+		[self updateTextViewHeight:self.frame.size.height];
+		[textView becomeFirstResponder];
+	}
 };
 
 - (void)hide_keyboard {
 	//keyboard_text = p_existing;
-	[self resignFirstResponder];
+	if ([self canBecomeFirstResponder]) {
+		[self resignFirstResponder];
+	}
+	else {
+		[self flushAndReleaseTextView];
+	}
 };
 
 - (void)keyboardOnScreen:(NSNotification *)notification {
@@ -547,10 +587,41 @@ static void clear_touches() {
 	CGRect keyboardFrame = [self convertRect:rawFrame fromView:nil];
 
 	OSIPhone::get_singleton()->set_virtual_keyboard_height(_points_to_pixels(keyboardFrame.size.height));
+
+	if (textViewContainer) {
+		[self updateTextViewHeight:(self.frame.size.height - keyboardFrame.size.height)];
+	}
 }
 
 - (void)keyboardHidden:(NSNotification *)notification {
+	[self flushAndReleaseTextView];
 	OSIPhone::get_singleton()->set_virtual_keyboard_height(0);
+}
+
+- (void)textViewDidEndEditing:(UITextView *)textView {
+    [self flushAndReleaseTextView];
+}
+
+- (void)onDoneButtonPressed:(id)sender {
+	[self flushAndReleaseTextView];
+}
+
+- (void)flushAndReleaseTextView {
+	if (textViewContainer) {
+		NSLog(@"Text input finished, text = '%@'", textView.text);
+		String text = String::utf8([textView.text UTF8String]);
+		UIView *container = textViewContainer;
+		textViewContainer = nil;
+		textView = nil;
+		textCloseButton = nil;
+
+		keyboard_text = text;
+		OSIPhone::get_singleton()->call_ime_text_callback(text, Point2(text.length(), 0));
+
+		dispatch_async(dispatch_get_main_queue(), ^{
+			[container removeFromSuperview];
+		});
+	}
 }
 
 - (void)deleteBackward {

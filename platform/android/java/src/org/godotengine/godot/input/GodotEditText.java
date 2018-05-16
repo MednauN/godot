@@ -31,6 +31,7 @@
 package org.godotengine.godot.input;
 import android.content.Context;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.widget.EditText;
 import org.godotengine.godot.*;
@@ -53,6 +54,7 @@ public class GodotEditText extends EditText {
 	private GodotTextInputWrapper mInputWrapper;
 	private static Handler sHandler;
 	private String mOriginText;
+	private boolean mUseSystemEditor = false;
 
 	// ===========================================================
 	// Constructors
@@ -118,15 +120,27 @@ public class GodotEditText extends EditText {
 		view.requestFocus();
 	}
 
+	public void setUseSystemEditor(final boolean useSystemEditor) {
+		if (useSystemEditor != mUseSystemEditor) {
+			mUseSystemEditor = useSystemEditor;
+			this.setImeOptions(mUseSystemEditor ? 0 : EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+		}
+	}
+
+	public boolean isUseSystemEditor() {
+		return mUseSystemEditor;
+	}
+
 	// ===========================================================
 	// Methods for/from SuperClass/Interfaces
 	// ===========================================================
 	@Override
-	public boolean onKeyDown(final int keyCode, final KeyEvent keyEvent) {
-		super.onKeyDown(keyCode, keyEvent);
+	public boolean onKeyPreIme(final int keyCode, final KeyEvent keyEvent) {
+		super.onKeyPreIme(keyCode, keyEvent);
 
 		/* Let GlSurfaceView get focus if back key is input. */
 		if (keyCode == KeyEvent.KEYCODE_BACK) {
+			mInputWrapper.onKeyboardDismiss();
 			this.mView.requestFocus();
 		}
 

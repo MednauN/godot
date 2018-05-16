@@ -458,6 +458,17 @@ int OSIPhone::get_virtual_keyboard_height() const {
 	return virtual_keyboard_height;
 }
 
+void OSIPhone::set_ime_intermediate_text_callback(ImeCallback p_callback, void *p_inp) {
+	im_callback = p_callback;
+	im_target = p_inp;
+}
+
+void OSIPhone::call_ime_text_callback(String p_text, Point2 p_selection) {
+	if (im_callback) {
+		im_callback(im_target, p_text, p_selection);
+	}
+}
+
 Error OSIPhone::shell_open(String p_uri) {
 	return _shell_open(p_uri);
 };

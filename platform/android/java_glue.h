@@ -62,6 +62,7 @@ JNIEXPORT jstring JNICALL Java_org_godotengine_godot_GodotLib_getGlobal(JNIEnv *
 JNIEXPORT void JNICALL Java_org_godotengine_godot_GodotLib_callobject(JNIEnv *env, jobject p_obj, jint ID, jstring method, jobjectArray params);
 JNIEXPORT void JNICALL Java_org_godotengine_godot_GodotLib_calldeferred(JNIEnv *env, jobject p_obj, jint ID, jstring method, jobjectArray params);
 JNIEXPORT void JNICALL Java_org_godotengine_godot_GodotLib_setVirtualKeyboardHeight(JNIEnv *env, jobject obj, jint p_height);
+JNIEXPORT void JNICALL Java_org_godotengine_godot_GodotLib_imeTextCallback(JNIEnv *env, jobject obj, jstring p_text, jint p_selection_location, jint p_selection_length);
 }
 
 #endif

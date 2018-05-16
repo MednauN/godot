@@ -113,10 +113,13 @@ private:
 	InputDefault *input;
 
 	int virtual_keyboard_height;
+	ImeCallback im_callback;
+	void *im_target;
 
 	int video_driver_index;
 
 public:
+
 	bool iterate();
 
 	uint8_t get_orientations() const;
@@ -126,6 +129,8 @@ public:
 	void touches_cancelled();
 	void key(uint32_t p_key, bool p_pressed);
 	void set_virtual_keyboard_height(int p_height);
+	virtual void set_ime_intermediate_text_callback(ImeCallback p_callback, void *p_inp);
+	void call_ime_text_callback(String p_text, Point2 p_selection);
 
 	int set_base_framebuffer(int p_fb);
 

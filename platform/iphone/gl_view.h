@@ -37,7 +37,7 @@
 
 @protocol GLViewDelegate;
 
-@interface GLView : UIView <UIKeyInput> {
+@interface GLView : UIView <UIKeyInput, UITextViewDelegate> {
 @private
 	// The pixel dimensions of the backbuffer
 	GLint backingWidth;
@@ -69,6 +69,10 @@
 	BOOL delegateSetup;
 	BOOL active;
 	float screen_scale;
+
+	UITextView *textView;
+	UIButton *textCloseButton;
+	UIView *textViewContainer;
 }
 
 @property(nonatomic, assign) id<GLViewDelegate> delegate;
@@ -104,6 +108,9 @@
 - (void)audioRouteChangeListenerCallback:(NSNotification *)notification;
 - (void)keyboardOnScreen:(NSNotification *)notification;
 - (void)keyboardHidden:(NSNotification *)notification;
+- (void)onDoneButtonPressed:(id)sender;
+- (void)flushAndReleaseTextView;
+- (void)updateTextViewHeight:(int)height;
 
 @property NSTimeInterval animationInterval;
 @property(nonatomic, assign) BOOL useCADisplayLink;

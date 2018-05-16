@@ -143,6 +143,9 @@ private:
 	//power_android *power_manager;
 	int video_driver_index;
 
+	ImeCallback im_callback;
+	void *im_target;
+
 public:
 	// functions used by main to initialize/deinitialize the OS
 	virtual int get_video_driver_count() const;
@@ -205,6 +208,8 @@ public:
 	virtual void show_virtual_keyboard(const String &p_existing_text, const Rect2 &p_screen_rect = Rect2());
 	virtual void hide_virtual_keyboard();
 	virtual int get_virtual_keyboard_height() const;
+	virtual void set_ime_intermediate_text_callback(ImeCallback p_callback, void *p_inp);
+	void call_ime_text_callback(String p_text, Point2 p_selection);
 
 	void set_opengl_extensions(const char *p_gl_extensions);
 	void set_display_size(Size2 p_size);

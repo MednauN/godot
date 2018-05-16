@@ -549,6 +549,17 @@ void OS_Android::hide_virtual_keyboard() {
 	};
 }
 
+void OS_Android::set_ime_intermediate_text_callback(ImeCallback p_callback, void *p_inp) {
+	im_callback = p_callback;
+	im_target = p_inp;
+}
+
+void OS_Android::call_ime_text_callback(String p_text, Point2 p_selection) {
+	if (im_callback) {
+		im_callback(im_target, p_text, p_selection);
+	}
+}
+
 void OS_Android::init_video_mode(int p_video_width, int p_video_height) {
 
 	default_videomode.width = p_video_width;

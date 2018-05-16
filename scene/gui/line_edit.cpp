@@ -1463,6 +1463,13 @@ void LineEdit::set_right_icon(const Ref<Texture> &p_icon) {
 
 void LineEdit::_ime_text_callback(void *p_self, String p_text, Point2 p_selection) {
 	LineEdit *self = (LineEdit *)p_self;
+#if defined(IPHONE_ENABLED) || defined(ANDROID_ENABLED)
+	if (GLOBAL_DEF("gui/mobile/use_native_text_input", false)) {
+		self->set_text(p_text);
+		self->release_focus();
+		return;
+	}
+#endif
 	self->ime_text = p_text;
 	self->ime_selection = p_selection;
 	self->update();
