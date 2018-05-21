@@ -31,6 +31,7 @@
 #include "shader_language.h"
 #include "core/os/os.h"
 #include "core/print_string.h"
+#include "string_buffer.h"
 static bool _is_text_char(CharType c) {
 
 	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_';
@@ -530,7 +531,7 @@ ShaderLanguage::Token ShaderLanguage::_get_token() {
 					bool minus_exponent_found = false;
 					bool float_suffix_found = false;
 
-					String str;
+					StringBuffer str_buf;
 					int i = 0;
 
 					while (true) {
@@ -539,7 +540,7 @@ ShaderLanguage::Token ShaderLanguage::_get_token() {
 								return _make_token(TK_ERROR, "Invalid numeric constant");
 							period_found = true;
 						} else if (GETCHAR(i) == 'x') {
-							if (hexa_found || str.length() != 1 || str[0] != '0')
+							if (hexa_found || str_buf.length() != 1 || str_buf.ptr()[0] != '0')
 								return _make_token(TK_ERROR, "Invalid numeric constant");
 							hexa_found = true;
 						} else if (GETCHAR(i) == 'e') {
@@ -564,10 +565,14 @@ ShaderLanguage::Token ShaderLanguage::_get_token() {
 						} else
 							break;
 
-						str += CharType(GETCHAR(i));
+						str_buf += CharType(GETCHAR(i));
 						i++;
 					}
 
+					String str = str_buf.as_string();
+
+					if (!_is_number(str[str.length() - 1]))
+						return _make_token(TK_ERROR, "Invalid numeric constant");
 					CharType last_char = str[str.length() - 1];
 
 					if (hexa_found) {
@@ -635,11 +640,11 @@ ShaderLanguage::Token ShaderLanguage::_get_token() {
 
 				if (_is_text_char(GETCHAR(0))) {
 					// parse identifier
-					String str;
+					StringBuffer str_buf;
 
 					while (_is_text_char(GETCHAR(0))) {
 
-						str += CharType(GETCHAR(0));
+						str_buf += CharType(GETCHAR(0));
 						char_idx++;
 					}
 
@@ -649,14 +654,14 @@ ShaderLanguage::Token ShaderLanguage::_get_token() {
 
 					while (keyword_list[idx].text) {
 
-						if (str == keyword_list[idx].text) {
+						if (str_buf == keyword_list[idx].text) {
 
 							return _make_token(keyword_list[idx].token);
 						}
 						idx++;
 					}
 
-					return _make_token(TK_IDENTIFIER, str);
+					return _make_token(TK_IDENTIFIER, str_buf.as_string());
 				}
 
 				if (GETCHAR(0) > 32)
@@ -2068,7 +2073,7 @@ bool ShaderLanguage::_validate_function_call(BlockNode *p_block, OperatorNode *p
 	}
 
 	if (failed_builtin) {
-		String err = "Invalid arguments for built-in function: " + String(name) + "(";
+		String err = "Invalid arguments for built-in function: " + name + "(";
 		for (int i = 0; i < argcount; i++) {
 			if (i > 0)
 				err += ",";

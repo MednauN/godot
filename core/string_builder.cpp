@@ -96,3 +96,13 @@ String StringBuilder::as_string() const {
 
 	return final_string;
 }
+
+bool StringBuffer::operator==(const char const *p_str) const {
+	const CharType * self_ptr = ptr();
+	for (int i = 0; i < string_length; ++i) {
+		if (self_ptr[i] != p_str[i]) {
+			return false;
+		}
+	}
+	return p_str[string_length] == '\0';
+}

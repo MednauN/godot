@@ -66,11 +66,17 @@ public:
 		append(p_str);
 	}
 
+	bool operator==(const char const *p_str) const;
+
 	StringBuffer &reserve(int p_size);
 
 	int length() const;
 
 	String as_string();
+
+	_FORCE_INLINE_ const CharType *ptr() const {
+		return static_cast<const Vector<CharType> &>(buffer).empty() ? short_buffer : buffer.ptr();
+	}
 
 	double as_double();
 	int64_t as_int();

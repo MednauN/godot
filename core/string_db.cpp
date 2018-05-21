@@ -126,7 +126,11 @@ bool StringName::operator==(const String &p_name) const {
 		return (p_name.length() == 0);
 	}
 
-	return (_data->get_name() == p_name);
+	// `_data->get_name()` might allocate new string, avoiding calling it
+	if (_data->cname) {
+		return (p_name == _data->cname);
+	}
+	return (_data->name == p_name);
 }
 
 bool StringName::operator==(const char *p_name) const {
@@ -136,7 +140,11 @@ bool StringName::operator==(const char *p_name) const {
 		return (p_name[0] == 0);
 	}
 
-	return (_data->get_name() == p_name);
+	// `_data->get_name()` might allocate new string, avoiding calling it
+	if (_data->cname) {
+		return !strcmp(_data->cname, p_name);
+	}
+	return (_data->name == p_name);
 }
 
 bool StringName::operator!=(const String &p_name) const {

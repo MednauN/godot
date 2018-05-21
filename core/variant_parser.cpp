@@ -200,7 +200,7 @@ Error VariantParser::get_token(Stream *p_stream, Token &r_token, int &line, Stri
 			};
 			case '"': {
 
-				String str;
+				StringBuffer str_buf;
 				while (true) {
 
 					CharType ch = p_stream->get_char();
@@ -273,15 +273,16 @@ Error VariantParser::get_token(Stream *p_stream, Token &r_token, int &line, Stri
 							} break;
 						}
 
-						str += res;
+						str_buf += res;
 
 					} else {
 						if (ch == '\n')
 							line++;
-						str += ch;
+						str_buf += ch;
 					}
 				}
 
+				String str = str_buf.as_string();
 				if (p_stream->is_utf8()) {
 					str.parse_utf8(str.ascii(true).get_data());
 				}
