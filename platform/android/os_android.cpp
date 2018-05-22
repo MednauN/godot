@@ -92,9 +92,9 @@ void OS_Android::initialize_core() {
 
 #ifdef ANDROID_NATIVE_ACTIVITY
 
-	FileAccess::make_default<FileAccessAndroid>(FileAccess::ACCESS_RESOURCES);
-	FileAccess::make_default<FileAccessUnix>(FileAccess::ACCESS_USERDATA);
-	FileAccess::make_default<FileAccessUnix>(FileAccess::ACCESS_FILESYSTEM);
+	FileAccess::make_default<FileAccessBufferedFA<FileAccessAndroid> >(FileAccess::ACCESS_RESOURCES);
+	FileAccess::make_default<FileAccessBufferedFA<FileAccessUnix> >(FileAccess::ACCESS_USERDATA);
+	FileAccess::make_default<FileAccessBufferedFA<FileAccessUnix> >(FileAccess::ACCESS_FILESYSTEM);
 	//FileAccessBufferedFA<FileAccessUnix>::make_default();
 	DirAccess::make_default<DirAccessAndroid>(DirAccess::ACCESS_RESOURCES);
 	DirAccess::make_default<DirAccessUnix>(DirAccess::ACCESS_USERDATA);
@@ -103,17 +103,16 @@ void OS_Android::initialize_core() {
 #else
 
 	if (use_apk_expansion)
-		FileAccess::make_default<FileAccessUnix>(FileAccess::ACCESS_RESOURCES);
+		FileAccess::make_default<FileAccessBufferedFA<FileAccessUnix> >(FileAccess::ACCESS_RESOURCES);
 	else {
 #ifdef USE_JAVA_FILE_ACCESS
 		FileAccess::make_default<FileAccessBufferedFA<FileAccessJAndroid> >(FileAccess::ACCESS_RESOURCES);
 #else
-		//FileAccess::make_default<FileAccessBufferedFA<FileAccessAndroid> >(FileAccess::ACCESS_RESOURCES);
-		FileAccess::make_default<FileAccessAndroid>(FileAccess::ACCESS_RESOURCES);
+		FileAccess::make_default<FileAccessBufferedFA<FileAccessAndroid> >(FileAccess::ACCESS_RESOURCES);
 #endif
 	}
-	FileAccess::make_default<FileAccessUnix>(FileAccess::ACCESS_USERDATA);
-	FileAccess::make_default<FileAccessUnix>(FileAccess::ACCESS_FILESYSTEM);
+	FileAccess::make_default<FileAccessBufferedFA<FileAccessUnix> >(FileAccess::ACCESS_USERDATA);
+	FileAccess::make_default<FileAccessBufferedFA<FileAccessUnix> >(FileAccess::ACCESS_FILESYSTEM);
 	//FileAccessBufferedFA<FileAccessUnix>::make_default();
 	if (use_apk_expansion)
 		DirAccess::make_default<DirAccessUnix>(DirAccess::ACCESS_RESOURCES);

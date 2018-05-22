@@ -38,7 +38,7 @@
 #include "core/version.h"
 
 //#define print_bl(m_what) print_line(m_what)
-#define print_bl(m_what) (void)(m_what)
+#define print_bl(m_what)
 
 enum {
 

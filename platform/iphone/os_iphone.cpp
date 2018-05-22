@@ -39,6 +39,7 @@
 #include "main/main.h"
 
 #include "core/io/file_access_pack.h"
+#include "core/io/file_access_buffered_fa.h"
 #include "core/os/dir_access.h"
 #include "core/os/file_access.h"
 #include "core/project_settings.h"
@@ -89,6 +90,10 @@ void OSIPhone::initialize_core() {
 
 	OS_Unix::initialize_core();
 	SemaphoreIphone::make_default();
+	
+	FileAccess::make_default<FileAccessBufferedFA<FileAccessUnix> >(FileAccess::ACCESS_RESOURCES);
+	FileAccess::make_default<FileAccessBufferedFA<FileAccessUnix> >(FileAccess::ACCESS_USERDATA);
+	FileAccess::make_default<FileAccessBufferedFA<FileAccessUnix> >(FileAccess::ACCESS_FILESYSTEM);
 
 	set_data_dir(data_dir);
 };
