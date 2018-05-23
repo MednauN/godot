@@ -38,6 +38,7 @@
 
 #include "main/main.h"
 
+#include "drivers/unix/file_access_unix.h"
 #include "core/io/file_access_pack.h"
 #include "core/io/file_access_buffered_fa.h"
 #include "core/os/dir_access.h"
