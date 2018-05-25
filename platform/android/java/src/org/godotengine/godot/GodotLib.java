@@ -72,4 +72,5 @@ public class GodotLib {
 
 	public static native void setVirtualKeyboardHeight(int p_height);
 	public static native void imeTextCallback(String p_text, int p_selection_location, int p_selection_length);
+	public static native String translate(String p_key);
 }

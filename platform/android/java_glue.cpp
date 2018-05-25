@@ -44,6 +44,7 @@
 #include "main/main.h"
 #include "os_android.h"
 #include "thread_jandroid.h"
+#include "translation.h"
 #include <unistd.h>
 
 static JavaClassWrapper *java_class_wrapper = NULL;
@@ -759,8 +760,17 @@ JNIEXPORT void JNICALL Java_org_godotengine_godot_GodotLib_setVirtualKeyboardHei
 }
 
 JNIEXPORT void JNICALL Java_org_godotengine_godot_GodotLib_imeTextCallback(JNIEnv *env, jobject obj, jstring p_text, jint p_selection_location, jint p_selection_length) {
-	String text = env->GetStringUTFChars(p_text, NULL);
+	const char *utf_string = env->GetStringUTFChars(p_text, NULL);
+	String text = String::utf8(utf_string);
 	os_android->call_ime_text_callback(text, Point2(p_selection_location, p_selection_length));
+	env->ReleaseStringUTFChars(p_text, utf_string);
+}
+
+JNIEXPORT jstring JNICALL Java_org_godotengine_godot_GodotLib_translate(JNIEnv *env, jobject obj, jstring p_key) {
+	const char *utf_string = env->GetStringUTFChars(p_key, NULL);
+	String translatedText = TranslationServer::get_singleton()->translate(String::utf8(utf_string));
+	env->ReleaseStringUTFChars(p_key, utf_string);
+	return env->NewStringUTF(translatedText.utf8().get_data());
 }
 
 JNIEXPORT void JNICALL Java_org_godotengine_godot_GodotLib_initialize(JNIEnv *env, jobject obj, jobject activity, jboolean p_need_reload_hook, jobject p_asset_manager, jboolean p_use_apk_expansion) {

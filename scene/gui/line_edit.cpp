@@ -1465,7 +1465,7 @@ void LineEdit::_ime_text_callback(void *p_self, String p_text, Point2 p_selectio
 	LineEdit *self = (LineEdit *)p_self;
 #if defined(IPHONE_ENABLED) || defined(ANDROID_ENABLED)
 	if (GLOBAL_DEF("gui/mobile/use_native_text_input", false)) {
-		self->set_text(p_text);
+		self->set_text(p_text.replace("\n", ""));
 		self->release_focus();
 		return;
 	}

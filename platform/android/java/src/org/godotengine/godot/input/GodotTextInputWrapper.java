@@ -144,14 +144,7 @@ public class GodotTextInputWrapper implements TextWatcher, OnEditorActionListene
 		}
 
 		if (this.mEdit == pTextView && mEdit.isUseSystemEditor() && pActionID != EditorInfo.IME_NULL) {
-			final String textStr = pTextView.getText().toString();
-			mOriginText = null;
-			mView.queueEvent(new Runnable() {
-				@Override
-				public void run() {
-					GodotLib.imeTextCallback(textStr, textStr.length(), 0);
-				}
-			});
+			flushEditingText();
 			this.mView.requestFocus();
 			return true;
 		}
@@ -174,6 +167,19 @@ public class GodotTextInputWrapper implements TextWatcher, OnEditorActionListene
 				@Override
 				public void run() {
 					GodotLib.imeTextCallback(originText, originText.length(), 0);
+				}
+			});
+		}
+	}
+
+	void flushEditingText() {
+		if (mOriginText != null) {
+			final String textStr = mEdit.getText().toString();
+			mOriginText = null;
+			mView.queueEvent(new Runnable() {
+				@Override
+				public void run() {
+					GodotLib.imeTextCallback(textStr, textStr.length(), 0);
 				}
 			});
 		}

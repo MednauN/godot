@@ -30,6 +30,7 @@
 
 package org.godotengine.godot.input;
 import android.content.Context;
+import android.text.InputType;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -75,8 +76,9 @@ public class GodotEditText extends EditText {
 	}
 
 	protected void initView() {
-		this.setPadding(0, 0, 0, 0);
-		this.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+		this.setMaxLines(Integer.MAX_VALUE);
+		this.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+		this.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI | EditorInfo.IME_ACTION_DONE);
 
 		sHandler = new Handler() {
 			@Override
@@ -121,10 +123,7 @@ public class GodotEditText extends EditText {
 	}
 
 	public void setUseSystemEditor(final boolean useSystemEditor) {
-		if (useSystemEditor != mUseSystemEditor) {
-			mUseSystemEditor = useSystemEditor;
-			this.setImeOptions(mUseSystemEditor ? 0 : EditorInfo.IME_FLAG_NO_EXTRACT_UI);
-		}
+		mUseSystemEditor = useSystemEditor;
 	}
 
 	public boolean isUseSystemEditor() {
@@ -164,6 +163,10 @@ public class GodotEditText extends EditText {
 		msg.what = HANDLER_CLOSE_IME_KEYBOARD;
 		msg.obj = this;
 		sHandler.sendMessage(msg);
+	}
+
+	public void onDoneButtonPressed() {
+		mInputWrapper.flushEditingText();
 	}
 
 	// ===========================================================

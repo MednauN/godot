@@ -30,7 +30,6 @@
 
 package org.godotengine.godot;
 
-import android.R;
 import android.app.Activity;
 import android.content.pm.ConfigurationInfo;
 import android.os.Bundle;
@@ -46,18 +45,11 @@ import android.app.*;
 import android.content.*;
 import android.content.SharedPreferences.Editor;
 import android.view.*;
-import android.view.inputmethod.InputMethodManager;
 import android.os.*;
 import android.util.Log;
 import android.graphics.*;
-import android.text.method.*;
-import android.text.*;
-import android.media.*;
 import android.hardware.*;
-import android.content.*;
 import android.content.pm.PackageManager.NameNotFoundException;
-import android.net.Uri;
-import android.media.MediaPlayer;
 
 import android.content.ClipboardManager;
 import android.content.ClipData;
@@ -67,8 +59,6 @@ import java.util.List;
 import java.util.ArrayList;
 
 import org.godotengine.godot.payments.PaymentsManager;
-
-import java.io.IOException;
 
 import android.provider.Settings.Secure;
 import android.widget.FrameLayout;
@@ -82,7 +72,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.util.LinkedList;
 
-import com.google.android.vending.expansion.downloader.Constants;
 import com.google.android.vending.expansion.downloader.DownloadProgressInfo;
 import com.google.android.vending.expansion.downloader.DownloaderClientMarshaller;
 import com.google.android.vending.expansion.downloader.DownloaderServiceMarshaller;
@@ -91,9 +80,7 @@ import com.google.android.vending.expansion.downloader.IDownloaderClient;
 import com.google.android.vending.expansion.downloader.IDownloaderService;
 import com.google.android.vending.expansion.downloader.IStub;
 
-import android.os.Bundle;
 import android.os.Messenger;
-import android.os.SystemClock;
 
 public class Godot extends Activity implements SensorEventListener, IDownloaderClient {
 
@@ -223,6 +210,7 @@ public class Godot extends Activity implements SensorEventListener, IDownloaderC
 
 	public FrameLayout layout;
 	public RelativeLayout adLayout;
+	public LinearLayout mEditTextLayout;
 
 	static public GodotIO io;
 
@@ -261,8 +249,18 @@ public class Godot extends Activity implements SensorEventListener, IDownloaderC
 			singletons[i].onMainRequestPermissionsResult(requestCode, permissions, grantResults);
 		}
 	};
+	public boolean deviceHasNavigationBar() {
+		int id = getResources().getIdentifier("config_showNavigationBar", "bool", "android");
+		if (id > 0) {
+			return getResources().getBoolean(id);
+		} else {
+			boolean hasMenuKey = ViewConfiguration.get(this).hasPermanentMenuKey();
+			boolean hasBackKey = KeyCharacterMap.deviceHasKey(KeyEvent.KEYCODE_BACK);
+			return !hasMenuKey && !hasBackKey;
+		}
+	}
 
-	public void onVideoInit() {
+	public void onVideoInit(boolean use_gl2) {
 
 		boolean use_gl3 = getGLESVersionCode() >= 0x00030000;
 
@@ -273,13 +271,34 @@ public class Godot extends Activity implements SensorEventListener, IDownloaderC
 		layout.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
 		setContentView(layout);
 
+		mEditTextLayout = new LinearLayout(this);
+		mEditTextLayout.setOrientation(LinearLayout.HORIZONTAL);
+		mEditTextLayout.setGravity(Gravity.CENTER_VERTICAL);
+		mEditTextLayout.setBackgroundColor(Color.WHITE);
+		mEditTextLayout.setLayoutParams(new ViewGroup.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+		mEditTextLayout.setVisibility(View.INVISIBLE);
+		mEditTextLayout.setBaselineAligned(false);
+		mEditTextLayout.setClickable(true);
+		layout.addView(mEditTextLayout);
+
 		// GodotEditText layout
 		GodotEditText edittext = new GodotEditText(this);
-		edittext.setLayoutParams(new ViewGroup.LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT));
+		edittext.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT, 1f));
 		// ...add to FrameLayout
-		layout.addView(edittext);
+		mEditTextLayout.addView(edittext);
 
 		mView = new GodotView(getApplication(), io, use_gl3, use_32_bits, use_debug_opengl,this);
+		final Button doneButton = new Button(this);
+		doneButton.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+		doneButton.setTextSize(20);
+		doneButton.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View view) {
+				io.edit.onDoneButtonPressed();
+			}
+		});
+		mEditTextLayout.addView(doneButton);
+
 		layout.addView(mView, new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
 		edittext.setView(mView);
 		io.setEdit(edittext);
@@ -295,6 +314,22 @@ public class Godot extends Activity implements SensorEventListener, IDownloaderC
 
 				final int keyboardHeight = fullSize.y - gameSize.bottom;
 				GodotLib.setVirtualKeyboardHeight(keyboardHeight);
+
+				if (io.edit.isUseSystemEditor()) {
+					if (keyboardHeight > 0) {
+						mEditTextLayout.bringToFront();
+						int paddingRight = 0;
+						if (godot.deviceHasNavigationBar()) {
+							int resId = godot.getResources().getIdentifier("navigation_bar_height", "dimen", "android");
+							if (resId > 0) {
+								paddingRight = godot.getResources().getDimensionPixelSize(resId);
+							}
+						}
+						mEditTextLayout.setPadding(0, 0, paddingRight, keyboardHeight);
+					} else {
+						mView.bringToFront();
+					}
+				}
 			}
 		});
 
@@ -313,7 +348,13 @@ public class Godot extends Activity implements SensorEventListener, IDownloaderC
 					@Override
 					public void run() {
 						view.setKeepScreenOn("True".equals(GodotLib.getGlobal("display/window/energy_saving/keep_screen_on")));
+						doneButton.setText(GodotLib.translate("Done"));
+						view.setKeepScreenOn("True".equals(GodotLib.getGlobal("display/driver/keep_screen_on")));
 						io.edit.setUseSystemEditor(GodotLib.getGlobal("gui/mobile/use_native_text_input").equalsIgnoreCase("true"));
+						if (!io.edit.isUseSystemEditor()) {
+							io.edit.setPadding(0, 0, 0, 0);
+						}
+						mEditTextLayout.setVisibility(View.VISIBLE);
 					}
 				});
 			}
