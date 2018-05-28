@@ -31,6 +31,7 @@
 package org.godotengine.godot;
 import android.content.Context;
 import android.graphics.PixelFormat;
+import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -41,6 +42,9 @@ import android.view.InputDevice;
 import android.hardware.input.InputManager;
 
 import java.io.File;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -674,7 +678,19 @@ public class GodotView extends GLSurfaceView implements InputDeviceListener {
 
 	private static class Renderer implements GLSurfaceView.Renderer {
 
+		float[] verticesData = { 2.0f, 0.5f, 0.0f, -0.5f, 1.5f, 0.0f, 2.5f, -0.5f, 0.0f };
+		FloatBuffer vertices = ByteBuffer.allocateDirect(verticesData.length * 4)
+				.order(ByteOrder.nativeOrder()).asFloatBuffer().put(verticesData);
+
+		Renderer() {
+			vertices.position(0);
+		}
+
 		public void onDrawFrame(GL10 gl) {
+			GLES20.glVertexAttribPointer(0, 3, GLES20.GL_FLOAT, false, 0, vertices);
+			GLES20.glEnableVertexAttribArray(0);
+			GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 3);
+
 			GodotLib.step();
 			for (int i = 0; i < Godot.singleton_count; i++) {
 				Godot.singletons[i].onGLDrawFrame(gl);
