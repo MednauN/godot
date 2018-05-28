@@ -33,6 +33,7 @@ package org.godotengine.godot;
 import android.app.Activity;
 import android.content.pm.ConfigurationInfo;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
@@ -317,15 +318,20 @@ public class Godot extends Activity implements SensorEventListener, IDownloaderC
 
 				if (io.edit.isUseSystemEditor()) {
 					if (keyboardHeight > 0) {
+						doneButton.setText(GodotLib.translate("Done"));
+
+						DisplayMetrics displayMetrics = new DisplayMetrics();
+						godot.getWindowManager().getDefaultDisplay().getRealMetrics(displayMetrics);
+						int paddingLeft = Math.max(gameSize.left, 0);
+						int paddingTop = Math.max(gameSize.top, 0);
+						mEditTextLayout.setPadding(
+								paddingLeft,
+								paddingTop,
+								displayMetrics.widthPixels - gameSize.width() - paddingLeft,
+								displayMetrics.heightPixels - gameSize.height() - paddingTop
+						);
+
 						mEditTextLayout.bringToFront();
-						int paddingRight = 0;
-						if (godot.deviceHasNavigationBar()) {
-							int resId = godot.getResources().getIdentifier("navigation_bar_height", "dimen", "android");
-							if (resId > 0) {
-								paddingRight = godot.getResources().getDimensionPixelSize(resId);
-							}
-						}
-						mEditTextLayout.setPadding(0, 0, paddingRight, keyboardHeight);
 					} else {
 						mView.bringToFront();
 					}
@@ -347,12 +353,14 @@ public class Godot extends Activity implements SensorEventListener, IDownloaderC
 				runOnUiThread(new Runnable() {
 					@Override
 					public void run() {
-						view.setKeepScreenOn("True".equals(GodotLib.getGlobal("display/window/energy_saving/keep_screen_on")));
-						doneButton.setText(GodotLib.translate("Done"));
 						view.setKeepScreenOn("True".equals(GodotLib.getGlobal("display/driver/keep_screen_on")));
+
 						io.edit.setUseSystemEditor(GodotLib.getGlobal("gui/mobile/use_native_text_input").equalsIgnoreCase("true"));
 						if (!io.edit.isUseSystemEditor()) {
 							io.edit.setPadding(0, 0, 0, 0);
+						}
+						else {
+							doneButton.setText(GodotLib.translate("Done"));
 						}
 						mEditTextLayout.setVisibility(View.VISIBLE);
 					}
