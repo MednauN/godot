@@ -678,7 +678,7 @@ public class GodotView extends GLSurfaceView implements InputDeviceListener {
 
 	private static class Renderer implements GLSurfaceView.Renderer {
 
-		float[] verticesData = { 2.0f, 0.5f, 0.0f, -0.5f, 1.5f, 0.0f, 2.5f, -0.5f, 0.0f };
+		float[] verticesData = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
 		FloatBuffer vertices = ByteBuffer.allocateDirect(verticesData.length * 4)
 				.order(ByteOrder.nativeOrder()).asFloatBuffer().put(verticesData);
 

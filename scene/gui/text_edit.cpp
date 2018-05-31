@@ -1454,6 +1454,7 @@ void TextEdit::_ime_text_callback(void *p_self, String p_text, Point2 p_selectio
 	TextEdit *self = (TextEdit *)p_self;
 #if defined(IPHONE_ENABLED) || defined(ANDROID_ENABLED)
 	if (GLOBAL_DEF("gui/mobile/use_native_text_input", false)) {
+		self->deselect();
 		self->set_text(p_text);
 		self->release_focus();
 		return;
@@ -1852,6 +1853,12 @@ void TextEdit::_gui_input(const Ref<InputEvent> &p_gui_input) {
 				cursor_set_column(col);
 
 				if (mb->get_shift() && (cursor.column != prev_col || cursor.line != prev_line)) {
+						
+#if defined(IPHONE_ENABLED) || defined(ANDROID_ENABLED)
+						if (GLOBAL_DEF("gui/mobile/use_native_text_input", false)) {
+							return;
+						}
+#endif
 
 					if (!selection.active) {
 						selection.active = true;

@@ -31,26 +31,45 @@
 package org.godotengine.godot;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
+import android.content.pm.PackageManager.NameNotFoundException;
+import android.graphics.Color;
+import android.graphics.Point;
+import android.graphics.Rect;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+import android.os.Build;
 import android.content.pm.ConfigurationInfo;
 import android.os.Bundle;
+import android.os.Environment;
+import android.os.Messenger;
+import android.provider.Settings.Secure;
 import android.util.DisplayMetrics;
+import android.util.Log;
+import android.view.Display;
+import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.ViewGroup.LayoutParams;
+import android.view.ViewTreeObserver;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
-import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.view.ViewGroup.LayoutParams;
-import android.app.*;
-import android.content.*;
-import android.content.SharedPreferences.Editor;
-import android.view.*;
-import android.os.*;
-import android.util.Log;
-import android.graphics.*;
-import android.hardware.*;
-import android.content.pm.PackageManager.NameNotFoundException;
 
 import android.content.ClipboardManager;
 import android.content.ClipData;
@@ -81,7 +100,19 @@ import com.google.android.vending.expansion.downloader.IDownloaderClient;
 import com.google.android.vending.expansion.downloader.IDownloaderService;
 import com.google.android.vending.expansion.downloader.IStub;
 
-import android.os.Messenger;
+import org.godotengine.godot.input.GodotEditText;
+import org.godotengine.godot.payments.PaymentsManager;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.lang.reflect.Method;
+import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+
+import javax.microedition.khronos.opengles.GL10;
 
 public class Godot extends Activity implements SensorEventListener, IDownloaderClient {
 
@@ -101,6 +132,7 @@ public class Godot extends Activity implements SensorEventListener, IDownloaderC
 
 	private Button mPauseButton;
 	private Button mWiFiSettingsButton;
+	private Button mDoneButton;
 
 	private boolean use_32_bits = false;
 	private boolean use_immersive = false;
@@ -261,6 +293,36 @@ public class Godot extends Activity implements SensorEventListener, IDownloaderC
 		}
 	}
 
+	private void updateEditTextLayout() {
+		if (!io.edit.isUseSystemEditor()) {
+			return;
+		}
+		Point fullSize = new Point();
+		getWindowManager().getDefaultDisplay().getSize(fullSize);
+		Rect gameSize = new Rect();
+		mView.getWindowVisibleDisplayFrame(gameSize);
+
+		final int keyboardHeight = fullSize.y - gameSize.bottom;
+		if (keyboardHeight > 0 && mEditTextLayout.hasFocus()) {
+			mDoneButton.setText(GodotLib.translate("Done"));
+
+			DisplayMetrics displayMetrics = new DisplayMetrics();
+			getWindowManager().getDefaultDisplay().getRealMetrics(displayMetrics);
+			int paddingLeft = Math.max(gameSize.left, 0);
+			int paddingTop = Math.max(gameSize.top, 0);
+			mEditTextLayout.setPadding(
+					paddingLeft,
+					paddingTop,
+					displayMetrics.widthPixels - gameSize.width() - paddingLeft,
+					displayMetrics.heightPixels - gameSize.height() - paddingTop
+			);
+
+			mEditTextLayout.bringToFront();
+		} else {
+			mView.bringToFront();
+		}
+	}
+
 	public void onVideoInit(boolean use_gl2) {
 
 		boolean use_gl3 = getGLESVersionCode() >= 0x00030000;
@@ -280,14 +342,25 @@ public class Godot extends Activity implements SensorEventListener, IDownloaderC
 		mEditTextLayout.setVisibility(View.INVISIBLE);
 		mEditTextLayout.setBaselineAligned(false);
 		mEditTextLayout.setClickable(true);
+		mEditTextLayout.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+			@Override
+			public void onFocusChange(View view, boolean b) {
+				updateEditTextLayout();
+			}
+		});
 		layout.addView(mEditTextLayout);
 
 		// GodotEditText layout
 		GodotEditText edittext = new GodotEditText(this);
 		edittext.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT, 1f));
 		// ...add to FrameLayout
+		edittext.setOnFocusChangeListener(mEditTextLayout.getOnFocusChangeListener());
 		mEditTextLayout.addView(edittext);
 
+		mDoneButton = new Button(this);
+		mDoneButton.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+		mDoneButton.setTextSize(20);
+		mDoneButton.setOnClickListener(new View.OnClickListener() {
 		mView = new GodotView(getApplication(), io, use_gl3, use_32_bits, use_debug_opengl,this);
 		final Button doneButton = new Button(this);
 		doneButton.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
@@ -298,7 +371,7 @@ public class Godot extends Activity implements SensorEventListener, IDownloaderC
 				io.edit.onDoneButtonPressed();
 			}
 		});
-		mEditTextLayout.addView(doneButton);
+		mEditTextLayout.addView(mDoneButton);
 
 		layout.addView(mView, new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
 		edittext.setView(mView);
@@ -317,24 +390,7 @@ public class Godot extends Activity implements SensorEventListener, IDownloaderC
 				GodotLib.setVirtualKeyboardHeight(keyboardHeight);
 
 				if (io.edit.isUseSystemEditor()) {
-					if (keyboardHeight > 0) {
-						doneButton.setText(GodotLib.translate("Done"));
-
-						DisplayMetrics displayMetrics = new DisplayMetrics();
-						godot.getWindowManager().getDefaultDisplay().getRealMetrics(displayMetrics);
-						int paddingLeft = Math.max(gameSize.left, 0);
-						int paddingTop = Math.max(gameSize.top, 0);
-						mEditTextLayout.setPadding(
-								paddingLeft,
-								paddingTop,
-								displayMetrics.widthPixels - gameSize.width() - paddingLeft,
-								displayMetrics.heightPixels - gameSize.height() - paddingTop
-						);
-
-						mEditTextLayout.bringToFront();
-					} else {
-						mView.bringToFront();
-					}
+					updateEditTextLayout();
 				}
 			}
 		});
@@ -360,7 +416,7 @@ public class Godot extends Activity implements SensorEventListener, IDownloaderC
 							io.edit.setPadding(0, 0, 0, 0);
 						}
 						else {
-							doneButton.setText(GodotLib.translate("Done"));
+							mDoneButton.setText(GodotLib.translate("Done"));
 						}
 						mEditTextLayout.setVisibility(View.VISIBLE);
 					}

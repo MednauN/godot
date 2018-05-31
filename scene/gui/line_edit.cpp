@@ -63,6 +63,12 @@ void LineEdit::_gui_input(Ref<InputEvent> p_event) {
 		if (b->get_button_index() != BUTTON_LEFT)
 			return;
 
+#if defined(IPHONE_ENABLED) || defined(ANDROID_ENABLED)
+		if (GLOBAL_DEF("gui/mobile/use_native_text_input", false)) {
+			return;
+		}
+#endif
+
 		_reset_caret_blink_timer();
 		if (b->is_pressed()) {
 
@@ -1465,6 +1471,7 @@ void LineEdit::_ime_text_callback(void *p_self, String p_text, Point2 p_selectio
 	LineEdit *self = (LineEdit *)p_self;
 #if defined(IPHONE_ENABLED) || defined(ANDROID_ENABLED)
 	if (GLOBAL_DEF("gui/mobile/use_native_text_input", false)) {
+		self->deselect();
 		self->set_text(p_text.replace("\n", ""));
 		self->release_focus();
 		return;
