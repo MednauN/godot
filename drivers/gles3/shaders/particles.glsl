@@ -222,7 +222,9 @@ VERTEX_SHADER_CODE
 		xform = mat4(0.0);
 	}
 
-	xform = transpose(xform);
+	// Local variable is needed because "xform = transponse(xform);" corrupts the matrix on PowerVR Rogue G6200
+	mat4 xformTransponsed = transpose(xform);
+	xform = xformTransponsed;
 
 	out_velocity_active.a = mix(0.0, 1.0, shader_active);
 
