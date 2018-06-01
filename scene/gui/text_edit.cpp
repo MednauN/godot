@@ -1452,14 +1452,12 @@ void TextEdit::_notification(int p_what) {
 
 void TextEdit::_ime_text_callback(void *p_self, String p_text, Point2 p_selection) {
 	TextEdit *self = (TextEdit *)p_self;
-#if defined(IPHONE_ENABLED) || defined(ANDROID_ENABLED)
-	if (GLOBAL_DEF("gui/mobile/use_native_text_input", false)) {
+	if (self->_is_using_native_input()) {
 		self->deselect();
 		self->set_text(p_text);
 		self->release_focus();
 		return;
 	}
-#endif
 	self->ime_text = p_text;
 	self->ime_selection = p_selection;
 	self->update();
@@ -1854,11 +1852,9 @@ void TextEdit::_gui_input(const Ref<InputEvent> &p_gui_input) {
 
 				if (mb->get_shift() && (cursor.column != prev_col || cursor.line != prev_line)) {
 						
-#if defined(IPHONE_ENABLED) || defined(ANDROID_ENABLED)
-						if (GLOBAL_DEF("gui/mobile/use_native_text_input", false)) {
-							return;
-						}
-#endif
+					if (_is_using_native_input()) {
+						return;
+					}
 
 					if (!selection.active) {
 						selection.active = true;
@@ -3288,6 +3284,9 @@ void TextEdit::_scroll_down(real_t p_delta) {
 }
 
 void TextEdit::_pre_shift_selection() {
+	if (_is_using_native_input()) {
+		return;
+	}
 
 	if (!selection.active || selection.selecting_mode == Selection::MODE_NONE) {
 
@@ -4597,6 +4596,9 @@ void TextEdit::paste() {
 }
 
 void TextEdit::select_all() {
+	if (_is_using_native_input()) {
+		return;
+	}
 
 	if (text.size() == 1 && text[0].length() == 0)
 		return;
@@ -4621,6 +4623,9 @@ void TextEdit::deselect() {
 }
 
 void TextEdit::select(int p_from_line, int p_from_column, int p_to_line, int p_to_column) {
+	if (_is_using_native_input()) {
+		return;
+	}
 
 	if (p_from_line >= text.size())
 		p_from_line = text.size() - 1;
@@ -5823,6 +5828,14 @@ void TextEdit::_update_completion_candidates() {
 	// The top of the list is the best match
 	completion_current = completion_options[0];
 	completion_enabled = true;
+}
+
+bool TextEdit::_is_using_native_input() {
+#if defined(IPHONE_ENABLED) || defined(ANDROID_ENABLED)
+	return GLOBAL_DEF("gui/mobile/use_native_text_input", false);
+#else
+	return false;
+#endif
 }
 
 void TextEdit::query_code_comple() {

@@ -37,7 +37,7 @@
 
 @protocol GLViewDelegate;
 
-@interface GLView : UIView <UIKeyInput, UITextViewDelegate> {
+@interface GLView : UIView <UIKeyInput> {
 @private
 	// The pixel dimensions of the backbuffer
 	GLint backingWidth;

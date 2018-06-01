@@ -144,6 +144,7 @@ private:
 
 	void clear_internal();
 	void changed_internal();
+	bool _is_using_native_input();
 
 	void _editor_settings_changed();
 

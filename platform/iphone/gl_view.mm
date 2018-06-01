@@ -536,11 +536,13 @@ static void clear_touches() {
 		[textCloseButton sizeToFit];
 		CGSize buttonSize = textCloseButton.frame.size;
 		textCloseButton.frame = CGRectMake(textViewContainer.frame.size.width - buttonSize.width - 5, 0, buttonSize.width + 5, textViewContainer.frame.size.height);
+		textCloseButton.userInteractionEnabled = YES;
 		textView.frame = CGRectMake(0, 0, textViewContainer.frame.size.width - buttonSize.width - 5, height);
 	}
 }
 
 - (void)open_keyboard {
+	NSLog(@"!!open_keyboard");
 	//keyboard_text = p_existing;
 	if ([self canBecomeFirstResponder]) {
 		[self becomeFirstResponder];
@@ -555,12 +557,12 @@ static void clear_touches() {
 		String strButtonTitle = TranslationServer::get_singleton()->translate("Done");
 		NSString *buttonTitle = [[[NSString alloc] initWithUTF8String:strButtonTitle.utf8().get_data()] autorelease];
 		textCloseButton.titleLabel.font = [UIFont systemFontOfSize:20];
+		textCloseButton.userInteractionEnabled = NO;
 		[textCloseButton setTitle:buttonTitle forState:UIControlStateNormal];
 		[textCloseButton addTarget:self action:@selector(onDoneButtonPressed:) forControlEvents:UIControlEventTouchUpInside];
 		[textViewContainer addSubview:textCloseButton];
 
 		textView = [[UITextView alloc] init];
-		textView.delegate = self;
 		textView.font = [UIFont systemFontOfSize:16];
 		textView.text = [[[NSString alloc] initWithUTF8String:keyboard_text.utf8().get_data()] autorelease];
 		[textViewContainer addSubview:textView];
@@ -570,6 +572,7 @@ static void clear_touches() {
 };
 
 - (void)hide_keyboard {
+	NSLog(@"!!hide_keyboard");
 	//keyboard_text = p_existing;
 	if ([self canBecomeFirstResponder]) {
 		[self resignFirstResponder];
@@ -580,6 +583,7 @@ static void clear_touches() {
 };
 
 - (void)keyboardOnScreen:(NSNotification *)notification {
+	NSLog(@"!!keyboardOnScreen");
 	NSDictionary *info = notification.userInfo;
 	NSValue *value = info[UIKeyboardFrameEndUserInfoKey];
 
@@ -588,25 +592,29 @@ static void clear_touches() {
 
 	OSIPhone::get_singleton()->set_virtual_keyboard_height(_points_to_pixels(keyboardFrame.size.height));
 
+	if (!textViewContainer && ![self canBecomeFirstResponder]) {
+		NSLog(@"!!no view container");
+		[self open_keyboard];
+	}
+
 	if (textViewContainer) {
 		[self updateTextViewHeight:(self.frame.size.height - keyboardFrame.size.height)];
 	}
 }
 
 - (void)keyboardHidden:(NSNotification *)notification {
+	NSLog(@"!!keyboardHidden");
 	[self flushAndReleaseTextView];
 	OSIPhone::get_singleton()->set_virtual_keyboard_height(0);
 }
 
-- (void)textViewDidEndEditing:(UITextView *)textView {
-    [self flushAndReleaseTextView];
-}
-
 - (void)onDoneButtonPressed:(id)sender {
+	NSLog(@"!!onDoneButtonPressed");
 	[self flushAndReleaseTextView];
 }
 
 - (void)flushAndReleaseTextView {
+	NSLog(@"!!flushAndReleaseTextView");
 	if (textViewContainer) {
 		NSLog(@"Text input finished, text = '%@'", textView.text);
 		String text = String::utf8([textView.text UTF8String]);

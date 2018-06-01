@@ -63,11 +63,9 @@ void LineEdit::_gui_input(Ref<InputEvent> p_event) {
 		if (b->get_button_index() != BUTTON_LEFT)
 			return;
 
-#if defined(IPHONE_ENABLED) || defined(ANDROID_ENABLED)
-		if (GLOBAL_DEF("gui/mobile/use_native_text_input", false)) {
+		if (_is_using_native_input()) {
 			return;
 		}
-#endif
 
 		_reset_caret_blink_timer();
 		if (b->is_pressed()) {
@@ -89,7 +87,7 @@ void LineEdit::_gui_input(Ref<InputEvent> p_event) {
 
 			} else {
 
-				if (b->is_doubleclick()) {
+				if (b->is_doubleclick() && !_is_using_native_input()) {
 
 					selection.enabled = true;
 					selection.begin = 0;
@@ -1033,6 +1031,14 @@ void LineEdit::_toggle_draw_caret() {
 	}
 }
 
+bool LineEdit::_is_using_native_input() {
+#if defined(IPHONE_ENABLED) || defined(ANDROID_ENABLED)
+	return GLOBAL_DEF("gui/mobile/use_native_text_input", false);
+#else
+	return false;
+#endif
+}
+
 void LineEdit::delete_char() {
 
 	if ((text.length() <= 0) || (cursor_pos == 0)) return;
@@ -1307,6 +1313,9 @@ void LineEdit::select_all() {
 
 	if (!text.length())
 		return;
+	if (_is_using_native_input()) {
+		return;
+	}
 
 	selection.begin = 0;
 	selection.end = text.length();
@@ -1352,6 +1361,9 @@ String LineEdit::get_secret_character() const {
 }
 
 void LineEdit::select(int p_from, int p_to) {
+	if (_is_using_native_input()) {
+		return;
+	}
 
 	if (p_from == 0 && p_to == 0) {
 		deselect();
@@ -1469,14 +1481,12 @@ void LineEdit::set_right_icon(const Ref<Texture> &p_icon) {
 
 void LineEdit::_ime_text_callback(void *p_self, String p_text, Point2 p_selection) {
 	LineEdit *self = (LineEdit *)p_self;
-#if defined(IPHONE_ENABLED) || defined(ANDROID_ENABLED)
-	if (GLOBAL_DEF("gui/mobile/use_native_text_input", false)) {
+	if (self->_is_using_native_input()) {
 		self->deselect();
 		self->set_text(p_text.replace("\n", ""));
 		self->release_focus();
 		return;
 	}
-#endif
 	self->ime_text = p_text;
 	self->ime_selection = p_selection;
 	self->update();

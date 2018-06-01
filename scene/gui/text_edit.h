@@ -416,6 +416,7 @@ private:
 	void _cancel_code_hint();
 	void _confirm_completion();
 	void _update_completion_candidates();
+	bool _is_using_native_input();
 
 protected:
 	virtual String get_tooltip(const Point2 &p_pos) const;

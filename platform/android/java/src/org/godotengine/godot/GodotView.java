@@ -678,19 +678,8 @@ public class GodotView extends GLSurfaceView implements InputDeviceListener {
 
 	private static class Renderer implements GLSurfaceView.Renderer {
 
-		float[] verticesData = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
-		FloatBuffer vertices = ByteBuffer.allocateDirect(verticesData.length * 4)
-				.order(ByteOrder.nativeOrder()).asFloatBuffer().put(verticesData);
-
-		Renderer() {
-			vertices.position(0);
-		}
-
 		public void onDrawFrame(GL10 gl) {
-			GLES20.glVertexAttribPointer(0, 3, GLES20.GL_FLOAT, false, 0, vertices);
-			GLES20.glEnableVertexAttribArray(0);
-			GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 3);
-
+			GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT);
 			GodotLib.step();
 			for (int i = 0; i < Godot.singleton_count; i++) {
 				Godot.singletons[i].onGLDrawFrame(gl);
