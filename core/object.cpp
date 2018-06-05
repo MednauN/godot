@@ -1540,7 +1540,7 @@ void Object::_disconnect(const StringName &p_signal, Object *p_to_object, const 
 	ERR_FAIL_NULL(p_to_object);
 	Signal *s = signal_map.getptr(p_signal);
 	if (!s) {
-		ERR_EXPLAIN("Nonexistent signal: " + p_signal);
+		ERR_EXPLAIN("Nonexistent signal '" + p_signal + "' in object of class '" + get_class_name() + "' while disconnecting from " + p_to_method);
 		ERR_FAIL_COND(!s);
 	}
 	if (s->lock > 0) {
