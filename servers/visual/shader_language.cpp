@@ -531,7 +531,7 @@ ShaderLanguage::Token ShaderLanguage::_get_token() {
 					bool minus_exponent_found = false;
 					bool float_suffix_found = false;
 
-					StringBuffer str_buf;
+					StringBuffer<> str_buf;
 					int i = 0;
 
 					while (true) {
@@ -640,7 +640,7 @@ ShaderLanguage::Token ShaderLanguage::_get_token() {
 
 				if (_is_text_char(GETCHAR(0))) {
 					// parse identifier
-					StringBuffer str_buf;
+					StringBuffer<> str_buf;
 
 					while (_is_text_char(GETCHAR(0))) {
 

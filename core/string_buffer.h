@@ -75,7 +75,7 @@ public:
 	String as_string();
 
 	_FORCE_INLINE_ const CharType *ptr() const {
-		return static_cast<const Vector<CharType> &>(buffer).empty() ? short_buffer : buffer.ptr();
+		return static_cast<const String &>(buffer).empty() ? short_buffer : buffer.ptr();
 	}
 
 	double as_double();
@@ -169,4 +169,14 @@ int64_t StringBuffer<SHORT_BUFFER_SIZE>::as_int() {
 	return String::to_int(current_buffer_ptr());
 }
 
+template <int SHORT_BUFFER_SIZE>
+bool StringBuffer<SHORT_BUFFER_SIZE>::operator==(const char const *p_str) const {
+	const CharType * self_ptr = ptr();
+	for (int i = 0; i < string_length; ++i) {
+		if (self_ptr[i] != p_str[i]) {
+			return false;
+		}
+	}
+	return p_str[string_length] == '\0';
+}
 #endif

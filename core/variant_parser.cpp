@@ -200,7 +200,7 @@ Error VariantParser::get_token(Stream *p_stream, Token &r_token, int &line, Stri
 			};
 			case '"': {
 
-				StringBuffer str_buf;
+				StringBuffer<> str_buf;
 				while (true) {
 
 					CharType ch = p_stream->get_char();

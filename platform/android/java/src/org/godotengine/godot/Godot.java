@@ -31,6 +31,7 @@
 package org.godotengine.godot;
 
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.content.Context;
@@ -323,7 +324,7 @@ public class Godot extends Activity implements SensorEventListener, IDownloaderC
 		}
 	}
 
-	public void onVideoInit(boolean use_gl2) {
+	public void onVideoInit() {
 
 		boolean use_gl3 = getGLESVersionCode() >= 0x00030000;
 
@@ -361,11 +362,6 @@ public class Godot extends Activity implements SensorEventListener, IDownloaderC
 		mDoneButton.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
 		mDoneButton.setTextSize(20);
 		mDoneButton.setOnClickListener(new View.OnClickListener() {
-		mView = new GodotView(getApplication(), io, use_gl3, use_32_bits, use_debug_opengl,this);
-		final Button doneButton = new Button(this);
-		doneButton.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
-		doneButton.setTextSize(20);
-		doneButton.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View view) {
 				io.edit.onDoneButtonPressed();
@@ -373,6 +369,7 @@ public class Godot extends Activity implements SensorEventListener, IDownloaderC
 		});
 		mEditTextLayout.addView(mDoneButton);
 
+		mView = new GodotView(getApplication(), io, use_gl3, use_32_bits, this);
 		layout.addView(mView, new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
 		edittext.setView(mView);
 		io.setEdit(edittext);
@@ -409,7 +406,7 @@ public class Godot extends Activity implements SensorEventListener, IDownloaderC
 				runOnUiThread(new Runnable() {
 					@Override
 					public void run() {
-						view.setKeepScreenOn("True".equals(GodotLib.getGlobal("display/driver/keep_screen_on")));
+						view.setKeepScreenOn("True".equals(GodotLib.getGlobal("display/window/energy_saving/keep_screen_on")));
 
 						io.edit.setUseSystemEditor(GodotLib.getGlobal("gui/mobile/use_native_text_input").equalsIgnoreCase("true"));
 						if (!io.edit.isUseSystemEditor()) {
