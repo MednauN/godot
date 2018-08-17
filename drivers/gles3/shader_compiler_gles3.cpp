@@ -803,6 +803,7 @@ ShaderCompilerGLES3::ShaderCompilerGLES3() {
 	actions[VS::SHADER_CANVAS_ITEM].renames["NORMAL"] = "normal";
 	actions[VS::SHADER_CANVAS_ITEM].renames["NORMALMAP"] = "normal_map";
 	actions[VS::SHADER_CANVAS_ITEM].renames["NORMALMAP_DEPTH"] = "normal_depth";
+	actions[VS::SHADER_CANVAS_ITEM].renames["NORMALIZED_UV"] = "normalized_uv";
 	actions[VS::SHADER_CANVAS_ITEM].renames["TEXTURE"] = "color_texture";
 	actions[VS::SHADER_CANVAS_ITEM].renames["TEXTURE_PIXEL_SIZE"] = "color_texpixel_size";
 	actions[VS::SHADER_CANVAS_ITEM].renames["NORMAL_TEXTURE"] = "normal_texture";

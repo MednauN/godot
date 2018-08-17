@@ -427,6 +427,7 @@ void main() {
 
 	vec4 color = color_interp;
 	vec2 uv = uv_interp;
+	vec2 normalized_uv = uv;
 
 #ifdef USE_TEXTURE_RECT
 
@@ -443,6 +444,8 @@ void main() {
 
 	uv = uv * src_rect.zw + src_rect.xy; //apply region if needed
 #endif
+
+	normalized_uv = (uv_interp - src_rect.xy) / abs(src_rect.zw);
 
 	if (clip_rect_uv) {
 
