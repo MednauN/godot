@@ -58,6 +58,8 @@ public:
 
 	void add_vertex(const Vector3 &p_vertex);
 
+	void add_vertex_array(const PoolVector<Vector3> &p_vertices, const PoolVector<Vector2> &p_uvs);
+
 	void end();
 	void clear();
 

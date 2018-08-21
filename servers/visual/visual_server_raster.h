@@ -277,6 +277,7 @@ public:
 	BIND0R(RID, immediate_create)
 	BIND3(immediate_begin, RID, PrimitiveType, RID)
 	BIND2(immediate_vertex, RID, const Vector3 &)
+	BIND3(immediate_vertex_array, RID, const PoolVector<Vector3> &, const PoolVector<Vector2> &)
 	BIND2(immediate_normal, RID, const Vector3 &)
 	BIND2(immediate_tangent, RID, const Plane &)
 	BIND2(immediate_color, RID, const Color &)

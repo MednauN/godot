@@ -869,6 +869,7 @@ public:
 	virtual RID immediate_create();
 	virtual void immediate_begin(RID p_immediate, VS::PrimitiveType p_rimitive, RID p_texture = RID());
 	virtual void immediate_vertex(RID p_immediate, const Vector3 &p_vertex);
+	virtual void immediate_vertex_array(RID p_immediate, const PoolVector<Vector3> &p_vertices, const PoolVector<Vector2> &p_uvs);
 	virtual void immediate_normal(RID p_immediate, const Vector3 &p_normal);
 	virtual void immediate_tangent(RID p_immediate, const Plane &p_tangent);
 	virtual void immediate_color(RID p_immediate, const Color &p_color);

@@ -212,6 +212,7 @@ public:
 	FUNCRID(immediate)
 	FUNC3(immediate_begin, RID, PrimitiveType, RID)
 	FUNC2(immediate_vertex, RID, const Vector3 &)
+	FUNC3(immediate_vertex_array, RID, const PoolVector<Vector3> &, const PoolVector<Vector2> &)
 	FUNC2(immediate_normal, RID, const Vector3 &)
 	FUNC2(immediate_tangent, RID, const Plane &)
 	FUNC2(immediate_color, RID, const Color &)
