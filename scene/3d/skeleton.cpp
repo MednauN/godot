@@ -228,6 +228,9 @@ void Skeleton::_notification(int p_what) {
 		} break;
 		case NOTIFICATION_UPDATE_SKELETON: {
 
+			if (!is_inside_tree())
+				return;
+
 			VisualServer *vs = VisualServer::get_singleton();
 			Bone *bonesptr = bones.ptrw();
 			int len = bones.size();
