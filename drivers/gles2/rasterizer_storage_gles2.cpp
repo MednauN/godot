@@ -2758,6 +2758,42 @@ void RasterizerStorageGLES2::immediate_vertex(RID p_immediate, const Vector3 &p_
 	c->vertices.push_back(p_vertex);
 }
 
+void RasterizerStorageGLES2::immediate_vertex_array(RID p_immediate, const PoolVector<Vector3> &p_vertices, const PoolVector<Vector2> &p_uvs) {
+	
+	if (p_vertices.size() == 0) 
+		return;
+		
+	Immediate *im = immediate_owner.get(p_immediate);
+	ERR_FAIL_COND(!im);
+	ERR_FAIL_COND(!im->building);
+
+	Immediate::Chunk *c = &im->chunks.back()->get();
+	bool has_uvs = (p_uvs.size() == p_vertices.size());
+	int idx_offset = c->vertices.size();
+
+	if (has_uvs) {
+		im->mask |= VS::ARRAY_FORMAT_TEX_UV;
+		c->uvs.resize(idx_offset + p_uvs.size());
+	}
+	im->mask |= VS::ARRAY_FORMAT_VERTEX;
+	c->vertices.resize(idx_offset + p_vertices.size());
+
+	PoolVector<Vector3>::Read vertices_read = p_vertices.read();
+	PoolVector<Vector2>::Read uvs_read = p_uvs.read();
+	for (int i = 0, sz = p_vertices.size(); i < sz; ++i) {
+		if (i == 0 && c->vertices.empty() && im->chunks.size() == 1) {
+
+			im->aabb.position = vertices_read[i];
+			im->aabb.size = Vector3();
+		} else {
+			im->aabb.expand_to(vertices_read[i]);
+		}
+
+		c->vertices.write[idx_offset + i] = vertices_read[i];
+		if (has_uvs) c->uvs.write[idx_offset + i] = uvs_read[i];
+	}
+}
+
 void RasterizerStorageGLES2::immediate_normal(RID p_immediate, const Vector3 &p_normal) {
 	Immediate *im = immediate_owner.get(p_immediate);
 	ERR_FAIL_COND(!im);

@@ -4651,8 +4651,8 @@ void RasterizerStorageGLES3::immediate_vertex_array(RID p_immediate, const PoolV
 			im->aabb.expand_to(vertices_read[i]);
 		}
 
-		c->vertices[idx_offset + i] = vertices_read[i];
-		if (has_uvs) c->uvs[idx_offset + i] = uvs_read[i];
+		c->vertices.write[idx_offset + i] = vertices_read[i];
+		if (has_uvs) c->uvs.write[idx_offset + i] = uvs_read[i];
 	}
 }
 
