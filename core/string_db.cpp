@@ -41,6 +41,10 @@ StaticCString StaticCString::create(const char *p_ptr) {
 
 StringName::_Data *StringName::_table[STRING_TABLE_LEN];
 
+bool StringName::_Data::name_equals(const char* p_name) const {
+	return cname ? !strcmp(p_name, cname) : (name == p_name); 
+}
+
 StringName _scs_create(const char *p_chr) {
 
 	return (p_chr[0] ? StringName(StaticCString::create(p_chr)) : StringName());
@@ -203,7 +207,7 @@ StringName::StringName(const char *p_name) {
 	while (_data) {
 
 		// compare hash first
-		if (_data->hash == hash && _data->get_name() == p_name)
+		if (_data->hash == hash && _data->name_equals(p_name))
 			break;
 		_data = _data->next;
 	}
@@ -299,7 +303,7 @@ StringName::StringName(const String &p_name) {
 
 	while (_data) {
 
-		if (_data->hash == hash && _data->get_name() == p_name)
+		if (_data->hash == hash && _data->name_equals(p_name))
 			break;
 		_data = _data->next;
 	}

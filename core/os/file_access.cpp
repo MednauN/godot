@@ -195,19 +195,16 @@ uint16_t FileAccess::get_16() const {
 uint32_t FileAccess::get_32() const {
 
 	uint32_t res;
-	uint16_t a, b;
+	uint8_t* res_bytes = (uint8_t*)(&res);
 
-	a = get_16();
-	b = get_16();
+	int bytes_read = get_buffer(res_bytes, 4);
+	ERR_FAIL_COND_V(bytes_read != 4, 0);
 
 	if (endian_swap) {
 
-		SWAP(a, b);
+		SWAP(res_bytes[0], res_bytes[3]);
+		SWAP(res_bytes[1], res_bytes[2]);
 	}
-
-	res = b;
-	res <<= 16;
-	res |= a;
 
 	return res;
 }

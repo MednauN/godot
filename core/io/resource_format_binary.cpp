@@ -103,18 +103,27 @@ void ResourceInteractiveLoaderBinary::_advance_padding(uint32_t p_len) {
 
 StringName ResourceInteractiveLoaderBinary::_get_string() {
 
+	const int STATIC_BUFFER_SIZE = 256;
+	uint8_t static_buffer[STATIC_BUFFER_SIZE];
+
 	uint32_t id = f->get_32();
 	if (id & 0x80000000) {
 		uint32_t len = id & 0x7FFFFFFF;
-		if (len > str_buf.size()) {
-			str_buf.resize(len);
-		}
 		if (len == 0)
 			return StringName();
-		f->get_buffer((uint8_t *)&str_buf[0], len);
-		String s;
-		s.parse_utf8(&str_buf[0]);
-		return s;
+
+		if (len <= STATIC_BUFFER_SIZE) {
+
+			f->get_buffer(&static_buffer[0], len);
+			return StringName((char *)&static_buffer[0]);
+		} else {
+
+			if (len > str_buf.size()) {
+				str_buf.resize(len);
+			}
+			f->get_buffer((uint8_t *)&str_buf[0], len);
+			return StringName(&str_buf[0]);
+		}
 	}
 
 	return string_map[id];
@@ -803,15 +812,28 @@ static String get_ustring(FileAccess *f) {
 
 String ResourceInteractiveLoaderBinary::get_unicode_string() {
 
+	const int STATIC_BUFFER_SIZE = 256;
+	uint8_t static_buffer[STATIC_BUFFER_SIZE];
+
 	int len = f->get_32();
-	if (len > str_buf.size()) {
-		str_buf.resize(len);
-	}
 	if (len == 0)
 		return String();
-	f->get_buffer((uint8_t *)&str_buf[0], len);
 	String s;
-	s.parse_utf8(&str_buf[0]);
+
+	if (len <= STATIC_BUFFER_SIZE) {
+		
+		f->get_buffer(&static_buffer[0], len);
+		s.parse_utf8((char *)&static_buffer[0]);
+	} else {
+
+		if (len > str_buf.size()) {
+			str_buf.resize(len);
+		}
+		f->get_buffer((uint8_t *)&str_buf[0], len);
+		
+		s.parse_utf8(&str_buf[0]);
+	}
+	
 	return s;
 }
 

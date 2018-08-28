@@ -195,15 +195,14 @@ void String::copy_from(const CharType &p_char) {
 
 bool String::operator==(const String &p_str) const {
 
-	if (length() != p_str.length())
+	int l = length();
+	if (l != p_str.length())
 		return false;
 	if (empty())
 		return true;
 
-	int l = length();
-
-	const CharType *src = c_str();
-	const CharType *dst = p_str.c_str();
+	const CharType *src = &operator[](0);
+	const CharType *dst = &p_str[0];
 
 	/* Compare char by char */
 	for (int i = 0; i < l; i++) {

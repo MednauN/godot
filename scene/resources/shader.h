@@ -59,6 +59,7 @@ private:
 	// conversion fast and save memory.
 	mutable bool params_cache_dirty;
 	mutable Map<StringName, StringName> params_cache; //map a shader param to a material param..
+	mutable List<PropertyInfo> params_cache_list;
 	Map<StringName, Ref<Texture> > default_textures;
 
 	virtual void _update_shader() const; //used for visual shader

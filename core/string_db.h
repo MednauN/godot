@@ -59,6 +59,8 @@ class StringName {
 		String name;
 
 		String get_name() const { return cname ? String(cname) : name; }
+		bool name_equals(const String &p_name) const { return cname ? (p_name == cname) : (p_name == name); }
+		bool name_equals(const char* p_name) const;
 		int idx;
 		uint32_t hash;
 		_Data *prev;

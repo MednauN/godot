@@ -66,27 +66,35 @@ String Shader::get_code() const {
 
 void Shader::get_param_list(List<PropertyInfo> *p_params) const {
 
-	_update_shader();
+	if (params_cache_dirty) {
+		
+		_update_shader();
+		List<PropertyInfo> local;
+		VisualServer::get_singleton()->shader_get_param_list(shader, &local);
+		params_cache.clear();
+		params_cache_dirty = false;
 
-	List<PropertyInfo> local;
-	VisualServer::get_singleton()->shader_get_param_list(shader, &local);
-	params_cache.clear();
-	params_cache_dirty = false;
+		params_cache_list.clear();
+		for (List<PropertyInfo>::Element *E = local.front(); E; E = E->next()) {
 
-	for (List<PropertyInfo>::Element *E = local.front(); E; E = E->next()) {
-
-		PropertyInfo pi = E->get();
-		if (default_textures.has(pi.name)) { //do not show default textures
-			continue;
-		}
-		pi.name = "shader_param/" + pi.name;
-		params_cache[pi.name] = E->get().name;
-		if (p_params) {
+			PropertyInfo pi = E->get();
+			if (default_textures.has(pi.name)) { //do not show default textures
+				continue;
+			}
+			pi.name = "shader_param/" + pi.name;
+			params_cache[pi.name] = E->get().name;
 
 			//small little hack
 			if (pi.type == Variant::_RID)
 				pi.type = Variant::OBJECT;
-			p_params->push_back(pi);
+
+			params_cache_list.push_back(pi);
+		}
+	}
+
+	if (p_params) {
+		for (List<PropertyInfo>::Element *E = params_cache_list.front(); E; E = E->next()) {
+			p_params->push_back(E->get());
 		}
 	}
 }
