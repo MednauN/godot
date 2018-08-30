@@ -6444,7 +6444,9 @@ bool GDScriptParser::_get_function_signature(DataType &p_base_type, const String
 	}
 
 	while (base_script.is_valid()) {
-		native = base_script->get_instance_base_type();
+		if (!native) {
+			native = base_script->get_instance_base_type();
+		}
 		MethodInfo mi = base_script->get_method_info(p_function);
 
 		if (!(mi == MethodInfo())) {
@@ -6952,7 +6954,9 @@ bool GDScriptParser::_get_member_type(const DataType &p_base_type, const StringN
 		}
 
 		base_type = _type_from_variant(scr.operator Variant());
-		native = scr->get_instance_base_type();
+		if (!native) {
+			native = scr->get_instance_base_type();
+		}
 		scr = scr->get_base_script();
 	}
 
