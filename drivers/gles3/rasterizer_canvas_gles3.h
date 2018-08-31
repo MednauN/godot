@@ -63,6 +63,10 @@ public:
 		GLuint particle_quad_vertices;
 		GLuint particle_quad_array;
 
+		GLuint nine_patch_vertices;
+		GLuint nine_patch_indices;
+		GLuint nine_patch_vertices_array;
+
 		uint32_t polygon_buffer_size;
 
 	} data;

@@ -281,7 +281,22 @@ void RasterizerCanvasGLES3::_set_texture_rect_mode(bool p_enable, bool p_ninepat
 	if (state.using_texture_rect == p_enable && state.using_ninepatch == p_ninepatch)
 		return;
 
-	if (p_enable) {
+	if (p_enable && p_ninepatch) {
+
+		glBindVertexArray(data.nine_patch_vertices_array);
+
+		// Vertex buffer
+		glBindBuffer(GL_ARRAY_BUFFER, data.nine_patch_vertices);
+
+		glEnableVertexAttribArray(VS::ARRAY_VERTEX);
+		glVertexAttribPointer(VS::ARRAY_VERTEX, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, 0);
+		glEnableVertexAttribArray(VS::ARRAY_TEX_UV);
+		glVertexAttribPointer(VS::ARRAY_TEX_UV, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, (float *)0 + 2);
+
+		// Index buffer
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, data.nine_patch_indices);
+
+	} else if (p_enable) {
 		glBindVertexArray(data.canvas_quad_array);
 
 	} else {
@@ -724,35 +739,73 @@ void RasterizerCanvasGLES3::_canvas_item_render_commands(Item *p_item, Item *cur
 				glVertexAttrib4f(VS::ARRAY_COLOR, np->color.r, np->color.g, np->color.b, np->color.a);
 
 				RasterizerStorageGLES3::Texture *texture = _bind_canvas_texture(np->texture, np->normal_map);
-
 				Size2 texpixel_size;
+				Size2 margin_src_unit;
 
 				if (!texture) {
-
+					
 					texpixel_size = Size2(1, 1);
-
 					state.canvas_shader.set_uniform(CanvasShaderGLES3::SRC_RECT, Color(0, 0, 1, 1));
-
 				} else {
 
+					texpixel_size = Size2(1.0 / texture->width, 1.0 / texture->height);
+					
+					Rect2 src_rect;
 					if (np->source != Rect2()) {
-						texpixel_size = Size2(1.0 / np->source.size.width, 1.0 / np->source.size.height);
-						state.canvas_shader.set_uniform(CanvasShaderGLES3::SRC_RECT, Color(np->source.position.x / texture->width, np->source.position.y / texture->height, np->source.size.x / texture->width, np->source.size.y / texture->height));
+						margin_src_unit = Size2(1.0 / np->source.size.width, 1.0 / np->source.size.height);
+						src_rect = Rect2(np->source.position * texpixel_size, np->source.size * texpixel_size);
 					} else {
-						texpixel_size = Size2(1.0 / texture->width, 1.0 / texture->height);
-						state.canvas_shader.set_uniform(CanvasShaderGLES3::SRC_RECT, Color(0, 0, 1, 1));
+						margin_src_unit = texpixel_size;
+						src_rect = Rect2(0, 0, 1, 1);
 					}
+
+					state.canvas_shader.set_uniform(CanvasShaderGLES3::SRC_RECT, Color(src_rect.position.x, src_rect.position.y, src_rect.size.x, src_rect.size.y));
 				}
 
 				state.canvas_shader.set_uniform(CanvasShaderGLES3::COLOR_TEXPIXEL_SIZE, texpixel_size);
-				state.canvas_shader.set_uniform(CanvasShaderGLES3::CLIP_RECT_UV, false);
-				state.canvas_shader.set_uniform(CanvasShaderGLES3::NP_REPEAT_H, int(np->axis_x));
-				state.canvas_shader.set_uniform(CanvasShaderGLES3::NP_REPEAT_V, int(np->axis_y));
-				state.canvas_shader.set_uniform(CanvasShaderGLES3::NP_DRAW_CENTER, np->draw_center);
-				state.canvas_shader.set_uniform(CanvasShaderGLES3::NP_MARGINS, Color(np->margin[MARGIN_LEFT], np->margin[MARGIN_TOP], np->margin[MARGIN_RIGHT], np->margin[MARGIN_BOTTOM]));
 				state.canvas_shader.set_uniform(CanvasShaderGLES3::DST_RECT, Color(np->rect.position.x, np->rect.position.y, np->rect.size.x, np->rect.size.y));
+				state.canvas_shader.set_uniform(CanvasShaderGLES3::CLIP_RECT_UV, false);
+				
+				float offsets_x[4] = {
+					0.0f, 
+					np->margin[MARGIN_LEFT] / np->rect.size.x, 
+					1.0f - np->margin[MARGIN_RIGHT] / np->rect.size.x, 
+					1.0f
+				};
+				float offsets_y[4] = {
+					0.0f, 
+					np->margin[MARGIN_TOP] / np->rect.size.y, 
+					1.0f - np->margin[MARGIN_BOTTOM] / np->rect.size.y, 
+					1.0f
+				};
+				float uv_offsets_x[4] = {
+					0.0f, 
+					np->margin[MARGIN_LEFT] * margin_src_unit.x, 
+					1.0f - np->margin[MARGIN_RIGHT] * margin_src_unit.x, 
+					1.0f
+				};
+				float uv_offsets_y[4] = {
+					0.0f, 
+					np->margin[MARGIN_TOP] * margin_src_unit.y, 
+					1.0f - np->margin[MARGIN_BOTTOM] * margin_src_unit.y, 
+					1.0f
+				};
 
-				glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+				float vertices[64];
+				for (int y = 0; y < 4; ++y) {
+					for (int x = 0; x < 4; ++x) {
+						int idx = x * 16 + y * 4;
+						// XY
+						vertices[idx + 0] = offsets_x[x];
+						vertices[idx + 1] = offsets_y[y];
+						//UV
+						vertices[idx + 2] = uv_offsets_x[x];
+						vertices[idx + 3] = uv_offsets_y[y];
+					}
+				}
+
+				glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * 64, vertices);
+				glDrawElements(GL_TRIANGLES, 3 * 2 * 9 - (np->draw_center ? 0 : 6), GL_UNSIGNED_BYTE, 0);
 
 				storage->frame.canvas_draw_commands++;
 			} break;
@@ -2079,6 +2132,64 @@ void RasterizerCanvasGLES3::initialize() {
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, data.polygon_index_buffer);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_size, NULL, GL_DYNAMIC_DRAW); //allocate max size
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	}
+	{
+		//nine patch buffers
+
+		glGenBuffers(1, &data.nine_patch_vertices);
+		glBindBuffer(GL_ARRAY_BUFFER, data.nine_patch_vertices);
+		// 16 points, 4 floats each
+		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 16 * 4, NULL, GL_DYNAMIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, 0); //unbind
+
+		glGenBuffers(1, &data.nine_patch_indices);
+		glBindBuffer(GL_ARRAY_BUFFER, data.nine_patch_indices);
+		{
+			// copied from gles2 rasterizer
+#define _EIDX(y, x) (y * 4 + x)
+		uint8_t elems[3 * 2 * 9] = {
+
+			// first row
+
+			_EIDX(0, 0), _EIDX(0, 1), _EIDX(1, 1),
+			_EIDX(1, 1), _EIDX(1, 0), _EIDX(0, 0),
+
+			_EIDX(0, 1), _EIDX(0, 2), _EIDX(1, 2),
+			_EIDX(1, 2), _EIDX(1, 1), _EIDX(0, 1),
+
+			_EIDX(0, 2), _EIDX(0, 3), _EIDX(1, 3),
+			_EIDX(1, 3), _EIDX(1, 2), _EIDX(0, 2),
+
+			// second row
+
+			_EIDX(1, 0), _EIDX(1, 1), _EIDX(2, 1),
+			_EIDX(2, 1), _EIDX(2, 0), _EIDX(1, 0),
+
+			_EIDX(1, 2), _EIDX(1, 3), _EIDX(2, 3),
+			_EIDX(2, 3), _EIDX(2, 2), _EIDX(1, 2),
+
+			// third row
+
+			_EIDX(2, 0), _EIDX(2, 1), _EIDX(3, 1),
+			_EIDX(3, 1), _EIDX(3, 0), _EIDX(2, 0),
+
+			_EIDX(2, 1), _EIDX(2, 2), _EIDX(3, 2),
+			_EIDX(3, 2), _EIDX(3, 1), _EIDX(2, 1),
+
+			_EIDX(2, 2), _EIDX(2, 3), _EIDX(3, 3),
+			_EIDX(3, 3), _EIDX(3, 2), _EIDX(2, 2),
+
+			// center field
+
+			_EIDX(1, 1), _EIDX(1, 2), _EIDX(2, 2),
+			_EIDX(2, 2), _EIDX(2, 1), _EIDX(1, 1)
+		};
+#undef _EIDX
+
+			glBufferData(GL_ARRAY_BUFFER, sizeof(elems), elems, GL_STATIC_DRAW);
+		}
+		glBindBuffer(GL_ARRAY_BUFFER, 0); //unbind
+		glGenVertexArrays(1, &data.nine_patch_vertices_array);
 	}
 
 	store_transform(Transform(), state.canvas_item_ubo_data.projection_matrix);

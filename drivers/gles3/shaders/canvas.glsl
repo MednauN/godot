@@ -15,6 +15,10 @@ layout(location = 7) in vec4 bone_weights; // attrib:7
 uniform vec4 dst_rect;
 uniform vec4 src_rect;
 
+#ifdef USE_NINEPATCH
+layout(location = 4) in highp vec2 uv_attrib;
+#endif
+
 #else
 
 #ifdef USE_INSTANCING
@@ -48,12 +52,6 @@ uniform highp mat4 extra_matrix;
 
 out highp vec2 uv_interp;
 out mediump vec4 color_interp;
-
-#ifdef USE_NINEPATCH
-
-out highp vec2 pixel_size_interp;
-#endif
-
 #ifdef USE_SKELETON
 uniform mediump sampler2D skeleton_texture; // texunit:-1
 uniform highp mat4 skeleton_transform;
@@ -131,10 +129,13 @@ void main() {
 
 #ifdef USE_TEXTURE_RECT
 
+#ifndef USE_NINEPATCH
+	vec2 uv_attrib = vertex;
+#endif
 	if (dst_rect.z < 0.0) { // Transpose is encoded as negative dst_rect.z
-		uv_interp = src_rect.xy + abs(src_rect.zw) * vertex.yx;
+		uv_interp = src_rect.xy + abs(src_rect.zw) * uv_attrib.yx;
 	} else {
-		uv_interp = src_rect.xy + abs(src_rect.zw) * vertex;
+		uv_interp = src_rect.xy + abs(src_rect.zw) * uv_attrib;
 	}
 	highp vec4 outvec = vec4(dst_rect.xy + abs(dst_rect.zw) * mix(vertex, vec2(1.0, 1.0) - vertex, lessThan(src_rect.zw, vec2(0.0, 0.0))), 0.0, 1.0);
 
@@ -166,12 +167,6 @@ VERTEX_SHADER_CODE
 
 		/* clang-format on */
 	}
-
-#ifdef USE_NINEPATCH
-
-	pixel_size_interp = abs(dst_rect.zw) * vertex;
-#endif
-
 #if !defined(SKIP_TRANSFORM_USED)
 	outvec = extra_matrix * outvec;
 	outvec = modelview_matrix * outvec;
@@ -370,55 +365,6 @@ LIGHT_SHADER_CODE
 uniform vec4 dst_rect;
 uniform vec4 src_rect;
 uniform bool clip_rect_uv;
-
-#ifdef USE_NINEPATCH
-
-in highp vec2 pixel_size_interp;
-
-uniform int np_repeat_v;
-uniform int np_repeat_h;
-uniform bool np_draw_center;
-// left top right bottom in pixel coordinates
-uniform vec4 np_margins;
-
-float map_ninepatch_axis(float pixel, float draw_size, float tex_pixel_size, float margin_begin, float margin_end, int np_repeat, inout int draw_center) {
-
-	float tex_size = 1.0 / tex_pixel_size;
-
-	if (pixel < margin_begin) {
-		return pixel * tex_pixel_size;
-	} else if (pixel >= draw_size - margin_end) {
-		return (tex_size - (draw_size - pixel)) * tex_pixel_size;
-	} else {
-		if (!np_draw_center) {
-			draw_center--;
-		}
-
-		if (np_repeat == 0) { //stretch
-			//convert to ratio
-			float ratio = (pixel - margin_begin) / (draw_size - margin_begin - margin_end);
-			//scale to source texture
-			return (margin_begin + ratio * (tex_size - margin_begin - margin_end)) * tex_pixel_size;
-		} else if (np_repeat == 1) { //tile
-			//convert to ratio
-			float ofs = mod((pixel - margin_begin), tex_size - margin_begin - margin_end);
-			//scale to source texture
-			return (margin_begin + ofs) * tex_pixel_size;
-		} else if (np_repeat == 2) { //tile fit
-			//convert to ratio
-			float src_area = draw_size - margin_begin - margin_end;
-			float dst_area = tex_size - margin_begin - margin_end;
-			float scale = max(1.0, floor(src_area / max(dst_area, 0.0000001) + 0.5));
-
-			//convert to ratio
-			float ratio = (pixel - margin_begin) / src_area;
-			ratio = mod(ratio * scale, 1.0);
-			return (margin_begin + ratio * dst_area) * tex_pixel_size;
-		}
-	}
-}
-
-#endif
 #endif
 
 uniform bool use_default_normal;
@@ -430,21 +376,6 @@ void main() {
 	vec2 normalized_uv = uv;
 
 #ifdef USE_TEXTURE_RECT
-
-#ifdef USE_NINEPATCH
-
-	int draw_center = 2;
-	uv = vec2(
-			map_ninepatch_axis(pixel_size_interp.x, abs(dst_rect.z), color_texpixel_size.x, np_margins.x, np_margins.z, np_repeat_h, draw_center),
-			map_ninepatch_axis(pixel_size_interp.y, abs(dst_rect.w), color_texpixel_size.y, np_margins.y, np_margins.w, np_repeat_v, draw_center));
-
-	if (draw_center == 0) {
-		color.a = 0.0;
-	}
-
-	uv = uv * src_rect.zw + src_rect.xy; //apply region if needed
-#endif
-
 	normalized_uv = (uv_interp - src_rect.xy) / abs(src_rect.zw);
 
 	if (clip_rect_uv) {
