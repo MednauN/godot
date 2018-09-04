@@ -66,6 +66,7 @@ private:
 	Size2 minsize;
 	int line_count;
 	bool uppercase;
+	float letter_spacing;
 
 	int get_longest_line_width() const;
 
@@ -138,6 +139,9 @@ public:
 
 	void set_max_lines_visible(int p_lines);
 	int get_max_lines_visible() const;
+
+	void set_letter_spacing(float p_spacing);
+	float get_letter_spacing() const;
 
 	int get_line_height() const;
 	int get_line_count() const;

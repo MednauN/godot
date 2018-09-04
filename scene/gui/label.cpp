@@ -103,8 +103,7 @@ void Label::_notification(int p_what) {
 
 		int lines_visible = (size.y + line_spacing) / font_h;
 
-		// ceiling to ensure autowrapping does not cut text
-		int space_w = Math::ceil(font->get_char_size(' ').width);
+		float space_w = font->get_char_size(' ').width + letter_spacing;
 		int chars_total = 0;
 
 		int vbegin = 0, vsep = 0;
@@ -179,13 +178,15 @@ void Label::_notification(int p_what) {
 			WordCache *from = wc;
 			WordCache *to = wc;
 
-			int taken = 0;
+			float taken = 0;
 			int spaces = 0;
 			while (to && to->char_pos >= 0) {
 
 				taken += to->pixel_width;
 				if (to != from && to->space_count) {
 					spaces += to->space_count;
+					// account for spacing before the first space
+					taken += letter_spacing;
 				}
 				to = to->next;
 			}
@@ -202,7 +203,6 @@ void Label::_notification(int p_what) {
 					x_ofs = style->get_offset().x;
 				} break;
 				case ALIGN_CENTER: {
-
 					x_ofs = int(size.width - (taken + spaces * space_w)) / 2;
 				} break;
 				case ALIGN_RIGHT: {
@@ -247,7 +247,7 @@ void Label::_notification(int p_what) {
 								n = String::char_uppercase(c);
 							}
 
-							float move = font->draw_char(ci, Point2(x_ofs_shadow, y_ofs) + shadow_ofs, c, n, font_color_shadow, false);
+							float move = font->draw_char(ci, Point2(x_ofs_shadow, y_ofs) + shadow_ofs, c, n, font_color_shadow, false) + letter_spacing;
 							if (use_outline) {
 								font->draw_char(ci, Point2(x_ofs_shadow, y_ofs) + Vector2(-shadow_ofs.x, shadow_ofs.y), c, n, font_color_shadow, false);
 								font->draw_char(ci, Point2(x_ofs_shadow, y_ofs) + Vector2(shadow_ofs.x, -shadow_ofs.y), c, n, font_color_shadow, false);
@@ -267,8 +267,7 @@ void Label::_notification(int p_what) {
 							c = String::char_uppercase(c);
 							n = String::char_uppercase(c);
 						}
-
-						x_ofs += drawer.draw_char(ci, Point2(x_ofs, y_ofs), c, n, font_color);
+						x_ofs += drawer.draw_char(ci, Point2(x_ofs, y_ofs), c, n, font_color) + letter_spacing;
 						chars_total++;
 					}
 				}
@@ -312,8 +311,8 @@ Size2 Label::get_minimum_size() const {
 int Label::get_longest_line_width() const {
 
 	Ref<Font> font = get_font("font");
-	int max_line_width = 0;
-	int line_width = 0;
+	float max_line_width = 0;
+	float line_width = 0;
 
 	for (int i = 0; i < xl_text.size(); i++) {
 
@@ -324,15 +323,15 @@ int Label::get_longest_line_width() const {
 		if (current < 32) {
 
 			if (current == '\n') {
-
 				if (line_width > max_line_width)
 					max_line_width = line_width;
 				line_width = 0;
 			}
 		} else {
 
-			// ceiling to ensure autowrapping does not cut text
-			int char_width = Math::ceil(font->get_char_size(current, xl_text[i + 1]).width);
+			float char_width = font->get_char_size(current, xl_text[i + 1]).width;
+			if (line_width > 0)
+				line_width += letter_spacing;
 			line_width += char_width;
 		}
 	}
@@ -340,7 +339,7 @@ int Label::get_longest_line_width() const {
 	if (line_width > max_line_width)
 		max_line_width = line_width;
 
-	return max_line_width;
+	return Math::ceil(max_line_width);
 }
 
 int Label::get_line_count() const {
@@ -381,12 +380,11 @@ void Label::regenerate_word_cache() {
 	int width = autowrap ? (get_size().width - style->get_minimum_size().width) : get_longest_line_width();
 	Ref<Font> font = get_font("font");
 
-	int current_word_size = 0;
+	float current_word_size = 0;
 	int word_pos = 0;
-	int line_width = 0;
+	float line_width = 0;
 	int space_count = 0;
-	// ceiling to ensure autowrapping does not cut text
-	int space_width = Math::ceil(font->get_char_size(' ').width);
+	float space_width = font->get_char_size(' ').width;
 	int line_spacing = get_constant("line_spacing");
 	line_count = 1;
 	total_char_cache = 0;
@@ -419,7 +417,7 @@ void Label::regenerate_word_cache() {
 				}
 				last = wc;
 
-				wc->pixel_width = current_word_size;
+				wc->pixel_width = Math::ceil(current_word_size);
 				wc->char_pos = word_pos;
 				wc->word_len = i - word_pos;
 				wc->space_count = space_count;
@@ -437,7 +435,7 @@ void Label::regenerate_word_cache() {
 				total_char_cache--; // do not count spaces
 				if (line_width > 0 || last == NULL || last->char_pos != WordCache::CHAR_WRAPLINE) {
 					space_count++;
-					line_width += space_width;
+					line_width += line_width > 0 ? letter_spacing + space_width : space_width;
 				} else {
 					space_count = 0;
 				}
@@ -450,8 +448,8 @@ void Label::regenerate_word_cache() {
 			}
 			// ceiling to ensure autowrapping does not cut text
 			char_width = Math::ceil(font->get_char_size(current, xl_text[i + 1]).width);
-			current_word_size += char_width;
-			line_width += char_width;
+			current_word_size += current_word_size > 0 ? letter_spacing + char_width : char_width;
+			line_width += line_width > 0 ? letter_spacing + char_width : char_width;
 			total_char_cache++;
 		}
 
@@ -466,7 +464,7 @@ void Label::regenerate_word_cache() {
 					}
 					last = wc;
 
-					wc->pixel_width = current_word_size - char_width;
+					wc->pixel_width = Math::ceil(current_word_size - char_width);
 					wc->char_pos = word_pos;
 					wc->word_len = i - word_pos;
 					wc->space_count = space_count;
@@ -620,6 +618,15 @@ int Label::get_max_lines_visible() const {
 	return max_lines_visible;
 }
 
+void Label::set_letter_spacing(float p_spacing) {
+	letter_spacing = p_spacing;
+	update();
+}
+
+float Label::get_letter_spacing() const {
+	return letter_spacing;
+}
+
 int Label::get_total_character_count() const {
 
 	if (word_cache_dirty)
@@ -654,6 +661,8 @@ void Label::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_lines_skipped"), &Label::get_lines_skipped);
 	ClassDB::bind_method(D_METHOD("set_max_lines_visible", "lines_visible"), &Label::set_max_lines_visible);
 	ClassDB::bind_method(D_METHOD("get_max_lines_visible"), &Label::get_max_lines_visible);
+	ClassDB::bind_method(D_METHOD("set_letter_spacing", "letter_spacing"), &Label::set_letter_spacing);
+	ClassDB::bind_method(D_METHOD("get_letter_spacing"), &Label::get_letter_spacing);
 
 	BIND_ENUM_CONSTANT(ALIGN_LEFT);
 	BIND_ENUM_CONSTANT(ALIGN_CENTER);
@@ -675,6 +684,7 @@ void Label::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, "percent_visible", PROPERTY_HINT_RANGE, "0,1,0.001"), "set_percent_visible", "get_percent_visible");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "lines_skipped", PROPERTY_HINT_RANGE, "0,999,1"), "set_lines_skipped", "get_lines_skipped");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "max_lines_visible", PROPERTY_HINT_RANGE, "-1,999,1"), "set_max_lines_visible", "get_max_lines_visible");
+	ADD_PROPERTY(PropertyInfo(Variant::REAL, "letter_spacing"), "set_letter_spacing", "get_letter_spacing");
 }
 
 Label::Label(const String &p_text) {
@@ -694,6 +704,7 @@ Label::Label(const String &p_text) {
 	percent_visible = 1;
 	lines_skipped = 0;
 	max_lines_visible = -1;
+	letter_spacing = 0.0;
 	set_text(p_text);
 	uppercase = false;
 	set_v_size_flags(SIZE_SHRINK_CENTER);
