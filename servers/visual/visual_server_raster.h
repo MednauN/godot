@@ -99,6 +99,8 @@ public:
 
 #define BIND0R(m_r, m_name) \
 	m_r m_name() { return BINDBASE->m_name(); }
+#define BIND0RC(m_r, m_name) \
+	m_r m_name() const { return BINDBASE->m_name(); }
 #define BIND1R(m_r, m_name, m_type1) \
 	m_r m_name(m_type1 arg1) { return BINDBASE->m_name(arg1); }
 #define BIND1RC(m_r, m_name, m_type1) \
@@ -114,6 +116,8 @@ public:
 
 #define BIND1(m_name, m_type1) \
 	void m_name(m_type1 arg1) { DISPLAY_CHANGED BINDBASE->m_name(arg1); }
+#define BIND1C(m_name, m_type1) \
+	void m_name(m_type1 arg1) const { BINDBASE->m_name(arg1); }
 #define BIND2(m_name, m_type1, m_type2) \
 	void m_name(m_type1 arg1, m_type2 arg2) { DISPLAY_CHANGED BINDBASE->m_name(arg1, arg2); }
 #define BIND2C(m_name, m_type1, m_type2) \
@@ -192,6 +196,10 @@ public:
 
 	BIND3(shader_set_default_texture_param, RID, const StringName &, RID)
 	BIND2RC(RID, shader_get_default_texture_param, RID, const StringName &)
+
+	BIND0RC(bool, is_shader_cache_changed)
+	BIND1RC(Error, save_shader_cache, const String &)
+	BIND1R(Error, load_shader_cache, const String &)
 
 	/* COMMON MATERIAL API */
 

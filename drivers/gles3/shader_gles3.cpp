@@ -31,6 +31,8 @@
 #include "shader_gles3.h"
 
 #include "core/print_string.h"
+#include "thirdparty/misc/md5.h"
+#include "os/file_access.h"
 
 //#define DEBUG_OPENGL
 
@@ -50,6 +52,11 @@
 #endif
 
 ShaderGLES3 *ShaderGLES3::active = NULL;
+
+HashMap<ShaderGLES3::ShaderCodeHash, ShaderGLES3::CompiledShader, ShaderGLES3::ShaderCodeHash> *ShaderGLES3::shader_cache = 
+	new HashMap<ShaderGLES3::ShaderCodeHash, ShaderGLES3::CompiledShader, ShaderGLES3::ShaderCodeHash>();
+
+bool ShaderGLES3::shader_cache_changed = false;
 
 //#define DEBUG_SHADER
 
@@ -192,42 +199,82 @@ static void _insert_shader_adreno_hacks(Vector<const char *> &p_strings) {
 	p_strings.push_back("#define pow(x, y) pow_no_inline(x, y)\n");
 }
 
-ShaderGLES3::Version *ShaderGLES3::get_current_version() {
+ShaderGLES3::ShaderCodeHash ShaderGLES3::get_code_hash(CustomCode *cc)  {
 
-	Version *_v = version_map.getptr(conditional_version);
+	struct Helper {
 
-	if (_v) {
+		static void append_string(MD5_CTX &ctx, const CharString &str) {
+			MD5Update(&ctx, (unsigned char *)str.get_data(), str.length());
+		}
 
-		if (conditional_version.code_version != 0) {
-			CustomCode *cc = custom_code_map.getptr(conditional_version.code_version);
-			ERR_FAIL_COND_V(!cc, _v);
-			if (cc->version == _v->code_version)
-				return _v;
-		} else {
-			return _v;
+		static void append_string(MD5_CTX &ctx, const char *str) {
+			MD5Update(&ctx, (unsigned char *)str, strlen(str));
+		}
+	};
+
+	ShaderCodeHash code_hash;
+	MD5_CTX ctx;
+	MD5Init(&ctx);
+	MD5Update(&ctx, (unsigned char *)"v1", 2); // version code
+
+	for (int i = 0; i < custom_defines.size(); i++) {
+		Helper::append_string(ctx, custom_defines[i]);
+	}
+
+	for (int j = 0; j < conditional_count; j++) {
+
+		bool enable = ((1 << j) & conditional_version.version);
+		Helper::append_string(ctx, enable ? conditional_defines[j] : "");
+	}
+
+	Helper::append_string(ctx, vertex_code0);
+	Helper::append_string(ctx, vertex_code1);
+	Helper::append_string(ctx, vertex_code2);
+	Helper::append_string(ctx, vertex_code3);
+
+	Helper::append_string(ctx, fragment_code0);
+	Helper::append_string(ctx, fragment_code1);
+	Helper::append_string(ctx, fragment_code2);
+	Helper::append_string(ctx, fragment_code3);
+	Helper::append_string(ctx, fragment_code4);
+
+	if (cc) {
+		for (int i = 0; i < cc->custom_defines.size(); i++) {
+			Helper::append_string(ctx, cc->custom_defines[i]);
+		}
+
+		Helper::append_string(ctx, cc->uniforms.ascii());
+		Helper::append_string(ctx, cc->vertex_globals.ascii());
+		Helper::append_string(ctx, cc->vertex.ascii());
+
+		Helper::append_string(ctx, cc->fragment_globals.ascii());
+		Helper::append_string(ctx, cc->light.ascii());
+		Helper::append_string(ctx, cc->fragment.ascii());
+	}
+
+	for (int i = 0; i < attribute_pair_count; i++) {
+
+		MD5Update(&ctx, (unsigned char *)&attribute_pairs[i].index, sizeof(attribute_pairs[i].index));
+		Helper::append_string(ctx, attribute_pairs[i].name);
+	}
+
+	if (feedback_count) {
+		for (int i = 0; i < feedback_count; i++) {
+
+			if (feedbacks[i].conditional == -1 || (1 << feedbacks[i].conditional) & conditional_version.version) {
+				//conditional for this feedback is enabled
+				Helper::append_string(ctx, feedbacks[i].name);
+			}
 		}
 	}
 
-	if (!_v)
-		version_map[conditional_version] = Version();
+	MD5Final(&ctx);
+	memcpy(code_hash.digest, ctx.digest, sizeof(ctx.digest));
+	return code_hash;
+}
 
-	Version &v = version_map[conditional_version];
+bool ShaderGLES3::compile_shader_program(Version &v, CustomCode *cc) {
 
-	if (!_v) {
-
-		v.uniform_location = memnew_arr(GLint, uniform_count);
-
-	} else {
-		if (v.ok) {
-			//bye bye shaders
-			glDeleteShader(v.vert_id);
-			glDeleteShader(v.frag_id);
-			glDeleteProgram(v.id);
-			v.id = 0;
-		}
-	}
-
-	v.ok = false;
 	/* SETUP CONDITIONALS */
 
 	Vector<const char *> strings;
@@ -264,22 +311,11 @@ ShaderGLES3::Version *ShaderGLES3::get_current_version() {
 	CharString code_globals;
 	CharString material_string;
 
-	CustomCode *cc = NULL;
-
-	if (conditional_version.code_version > 0) {
-		//do custom code related stuff
-
-		ERR_FAIL_COND_V(!custom_code_map.has(conditional_version.code_version), NULL);
-		cc = &custom_code_map[conditional_version.code_version];
-		v.code_version = cc->version;
-		define_line_ofs += 2;
-	}
-
 	/* CREATE PROGRAM */
 
 	v.id = glCreateProgram();
 
-	ERR_FAIL_COND_V(v.id == 0, NULL);
+	ERR_FAIL_COND_V(v.id == 0, false);
 
 	/* VERTEX SHADER */
 
@@ -377,7 +413,7 @@ ShaderGLES3::Version *ShaderGLES3::get_current_version() {
 			v.id = 0;
 		}
 
-		ERR_FAIL_V(NULL);
+		ERR_FAIL_V(false);
 	}
 
 	//_display_error_with_code("pepo", strings);
@@ -476,7 +512,7 @@ ShaderGLES3::Version *ShaderGLES3::get_current_version() {
 			v.id = 0;
 		}
 
-		ERR_FAIL_V(NULL);
+		ERR_FAIL_V(false);
 	}
 
 	glAttachShader(v.id, v.frag_id);
@@ -505,45 +541,136 @@ ShaderGLES3::Version *ShaderGLES3::get_current_version() {
 		}
 	}
 
+	glProgramParameteri(v.id, GL_PROGRAM_BINARY_RETRIEVABLE_HINT, GL_TRUE);
+
 	glLinkProgram(v.id);
 
-	glGetProgramiv(v.id, GL_LINK_STATUS, &status);
 
-	if (status == GL_FALSE) {
-		// error linking
-		GLsizei iloglen;
-		glGetProgramiv(v.id, GL_INFO_LOG_LENGTH, &iloglen);
+	return true;
+}
 
-		if (iloglen < 0) {
+ShaderGLES3::Version *ShaderGLES3::get_current_version() {
 
+	Version *_v = version_map.getptr(conditional_version);
+
+	if (_v) {
+
+		if (conditional_version.code_version != 0) {
+			CustomCode *cc = custom_code_map.getptr(conditional_version.code_version);
+			ERR_FAIL_COND_V(!cc, _v);
+			if (cc->version == _v->code_version)
+				return _v;
+		} else {
+			return _v;
+		}
+	}
+
+	if (!_v)
+		version_map[conditional_version] = Version();
+
+	Version &v = version_map[conditional_version];
+
+	if (!_v) {
+
+		v.uniform_location = memnew_arr(GLint, uniform_count);
+
+	} else {
+		if (v.ok) {
+			//bye bye shaders
+			glDeleteShader(v.vert_id);
+			glDeleteShader(v.frag_id);
+			glDeleteProgram(v.id);
+			v.id = 0;
+		}
+	}
+
+	v.ok = false;
+
+	CustomCode *cc = NULL;
+
+	if (conditional_version.code_version > 0) {
+		//do custom code related stuff
+
+		ERR_FAIL_COND_V(!custom_code_map.has(conditional_version.code_version), NULL);
+		cc = &custom_code_map[conditional_version.code_version];
+		v.code_version = cc->version;
+	}
+
+	ShaderCodeHash code_hash = get_code_hash(cc);
+	bool shader_loaded_from_cache = false;
+	GLint status;
+
+	if (shader_cache->has(code_hash)) {
+
+		v.id = glCreateProgram();
+		ERR_FAIL_COND_V(v.id == 0, NULL);
+
+		CompiledShader compiled_shader = shader_cache->get(code_hash);
+		glProgramBinary(v.id, compiled_shader.binary_format, compiled_shader.binary.ptr(), compiled_shader.binary.size());
+
+		glGetProgramiv(v.id, GL_LINK_STATUS, &status);
+		if (status != GL_FALSE) {
+			shader_loaded_from_cache = true;
+		}
+	}
+
+	if (!shader_loaded_from_cache) {
+
+		bool success = compile_shader_program(v, cc);
+		ERR_FAIL_COND_V(!success, NULL);
+
+		glGetProgramiv(v.id, GL_LINK_STATUS, &status);
+
+		if (status == GL_FALSE) {
+			// error linking
+			GLsizei iloglen;
+			glGetProgramiv(v.id, GL_INFO_LOG_LENGTH, &iloglen);
+
+			if (iloglen < 0) {
+
+				glDeleteShader(v.frag_id);
+				glDeleteShader(v.vert_id);
+				glDeleteProgram(v.id);
+				v.id = 0;
+				ERR_FAIL_COND_V(iloglen <= 0, NULL);
+			}
+
+			if (iloglen == 0) {
+
+				iloglen = 4096; //buggy driver (Adreno 220+....)
+			}
+
+			char *ilogmem = (char *)Memory::alloc_static(iloglen + 1);
+			ilogmem[iloglen] = 0;
+			glGetProgramInfoLog(v.id, iloglen, &iloglen, ilogmem);
+
+			String err_string = get_shader_name() + ": Program LINK FAILED:\n";
+
+			err_string += ilogmem;
+			ERR_PRINTS(err_string);
+			ERR_PRINT(err_string.ascii().get_data());
+			Memory::free_static(ilogmem);
 			glDeleteShader(v.frag_id);
 			glDeleteShader(v.vert_id);
 			glDeleteProgram(v.id);
 			v.id = 0;
-			ERR_FAIL_COND_V(iloglen <= 0, NULL);
+
+			ERR_FAIL_V(NULL);
 		}
 
-		if (iloglen == 0) {
+		// store compiled shader in cache
+		GLint binary_size = 0;
+		glGetProgramiv(v.id, GL_PROGRAM_BINARY_LENGTH, &binary_size);
 
-			iloglen = 4096; //buggy driver (Adreno 220+....)
+		CompiledShader compiled_shader;
+		compiled_shader.binary.resize(binary_size);
+		GLsizei binary_bytes_written;
+		glGetProgramBinary(v.id, binary_size, &binary_bytes_written, &compiled_shader.binary_format, compiled_shader.binary.ptrw());
+		if (binary_bytes_written > 0) {
+			compiled_shader.binary.resize(binary_bytes_written);
+			shader_cache->set(code_hash, compiled_shader);
+			shader_cache_changed = true;
 		}
-
-		char *ilogmem = (char *)Memory::alloc_static(iloglen + 1);
-		ilogmem[iloglen] = 0;
-		glGetProgramInfoLog(v.id, iloglen, &iloglen, ilogmem);
-
-		String err_string = get_shader_name() + ": Program LINK FAILED:\n";
-
-		err_string += ilogmem;
-		_display_error_with_code(err_string, strings);
-		ERR_PRINT(err_string.ascii().get_data());
-		Memory::free_static(ilogmem);
-		glDeleteShader(v.frag_id);
-		glDeleteShader(v.vert_id);
-		glDeleteProgram(v.id);
-		v.id = 0;
-
-		ERR_FAIL_V(NULL);
 	}
 
 	/* UNIFORMS */
@@ -783,6 +910,92 @@ void ShaderGLES3::free_custom_shader(uint32_t p_code_id) {
 void ShaderGLES3::set_base_material_tex_index(int p_idx) {
 
 	base_material_tex_index = p_idx;
+}
+
+bool ShaderGLES3::is_shader_cache_changed() {
+
+	return shader_cache_changed;
+}
+
+Error ShaderGLES3::save_shader_cache(const String &p_filename) {
+
+	Error err;
+	FileAccess *file = FileAccess::open(p_filename, FileAccess::WRITE, &err);
+
+	if (err) {
+		if (file) memdelete(file);
+		ERR_FAIL_V(err);
+	}
+
+	uint8_t magic[4] = { 'S', 'H', 'C', '1' };
+	file->store_buffer(magic, 4);
+	file->store_32(shader_cache->size());
+
+	const ShaderCodeHash *k = NULL;
+	while ( (k = shader_cache->next(k)) ) {
+	
+		file->store_buffer(k->digest, sizeof(k->digest));
+		const CompiledShader &compiled_shader = shader_cache->get(*k);
+		file->store_buffer((const uint8_t*)&compiled_shader.binary_format, sizeof(GLenum));
+		file->store_32(compiled_shader.binary.size());
+		file->store_buffer(compiled_shader.binary.ptr(), compiled_shader.binary.size());
+	}
+
+	memdelete(file);
+	shader_cache_changed = false;
+	print_line("Saved shader cache with " + String::num(shader_cache->size()) + " shaders");
+	return OK;
+}
+
+Error ShaderGLES3::load_shader_cache(const String &p_filename) {
+
+	Error err;
+	FileAccess *file = FileAccess::open(p_filename, FileAccess::READ, &err);
+
+	if (err) {
+		if (file) memdelete(file);
+		ERR_FAIL_V(err);
+	}
+
+	uint8_t magic[4] = { 'S', 'H', 'C', '1' };
+	uint8_t rmagic[4];
+	file->get_buffer(rmagic, 4);
+	if (memcmp(magic, rmagic, 4)) {
+		memdelete(file);
+		return ERR_FILE_UNRECOGNIZED;
+	}
+
+	shader_cache->clear();
+	uint32_t cache_size = file->get_32();
+	for (int i = 0; i < cache_size; ++i) {
+
+		ShaderCodeHash key;
+		file->get_buffer(key.digest, sizeof(key.digest));
+
+		CompiledShader compiled_shader;
+		file->get_buffer((uint8_t *)&compiled_shader.binary_format, sizeof(GLenum));
+		
+		uint32_t binary_size = file->get_32();
+		if (binary_size > 10 * 1024 * 1024) {
+			// If shader size is > 10M, there is definitely something wrong here 
+			memdelete(file);
+			ERR_FAIL_V(ERR_FILE_CORRUPT);
+		}
+
+		compiled_shader.binary.resize(binary_size);
+		int bytes_read = file->get_buffer(compiled_shader.binary.ptrw(), binary_size);
+		if (bytes_read != binary_size) {
+			memdelete(file);
+			ERR_FAIL_V(ERR_FILE_CORRUPT);
+		}
+
+		shader_cache->set(key, compiled_shader);
+	}
+
+	memdelete(file);
+	shader_cache_changed = false;
+	print_line("Loaded shader cache with " + String::num(shader_cache->size()) + " shaders");
+	return OK;
 }
 
 ShaderGLES3::ShaderGLES3() {

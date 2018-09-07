@@ -158,6 +158,28 @@ private:
 	//this should use a way more cachefriendly version..
 	HashMap<VersionKey, Version, VersionKeyHash> version_map;
 
+	struct ShaderCodeHash {
+		unsigned char digest[16];
+
+		static ShaderCodeHash from_code(const Vector<const char *> &p_shader_strings);
+
+		static _FORCE_INLINE_ uint32_t hash(const ShaderCodeHash &p_key) { return HashMapHasherDefault::hash(make_uint64_t(p_key)); };
+		
+		bool operator==(const ShaderCodeHash &p_other) const { return !memcmp(digest, p_other.digest, sizeof(digest)); }
+		bool operator<(const ShaderCodeHash &p_other) const { return memcmp(digest, p_other.digest, sizeof(digest)) < 0; }
+	};
+	struct CompiledShader {
+		Vector<uint8_t> binary;
+		GLenum binary_format;
+
+		bool is_valid() { return !binary.empty(); }
+	};
+	static HashMap<ShaderCodeHash, CompiledShader, ShaderCodeHash> *shader_cache;
+	static bool shader_cache_changed;
+
+	ShaderCodeHash get_code_hash(CustomCode *cc);
+	bool compile_shader_program(Version &v, CustomCode *cc);
+
 	HashMap<uint32_t, CustomCode> custom_code_map;
 	uint32_t last_custom_code;
 
@@ -368,6 +390,10 @@ public:
 	void add_custom_define(const String &p_define) {
 		custom_defines.push_back(p_define.utf8());
 	}
+
+	static bool is_shader_cache_changed();
+	static Error save_shader_cache(const String &p_filename);
+	static Error load_shader_cache(const String &p_filename);
 
 	virtual ~ShaderGLES3();
 };

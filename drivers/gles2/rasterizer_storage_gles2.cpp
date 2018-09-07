@@ -1347,6 +1347,19 @@ RID RasterizerStorageGLES2::shader_get_default_texture_param(RID p_shader, const
 	return E->get();
 }
 
+
+bool RasterizerStorageGLES2::is_shader_cache_changed() const {
+	return false;
+}
+
+Error RasterizerStorageGLES2::save_shader_cache(const String &p_filename) const {
+	return OK;
+}
+
+Error RasterizerStorageGLES2::load_shader_cache(const String &p_filename) {
+	return OK;
+}
+
 /* COMMON MATERIAL API */
 
 void RasterizerStorageGLES2::_material_make_dirty(Material *p_material) const {

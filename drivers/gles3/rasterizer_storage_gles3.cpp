@@ -2080,6 +2080,18 @@ RID RasterizerStorageGLES3::shader_get_default_texture_param(RID p_shader, const
 	return E->get();
 }
 
+bool RasterizerStorageGLES3::is_shader_cache_changed() const {
+	return ShaderGLES3::is_shader_cache_changed();
+}
+
+Error RasterizerStorageGLES3::save_shader_cache(const String &p_filename) const {
+	return ShaderGLES3::save_shader_cache(p_filename);
+}
+
+Error RasterizerStorageGLES3::load_shader_cache(const String &p_filename) {
+	return ShaderGLES3::load_shader_cache(p_filename);
+}
+
 /* COMMON MATERIAL API */
 
 void RasterizerStorageGLES3::_material_make_dirty(Material *p_material) const {

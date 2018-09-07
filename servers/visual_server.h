@@ -195,6 +195,10 @@ public:
 	virtual void shader_set_default_texture_param(RID p_shader, const StringName &p_name, RID p_texture) = 0;
 	virtual RID shader_get_default_texture_param(RID p_shader, const StringName &p_name) const = 0;
 
+	virtual bool is_shader_cache_changed() const = 0;
+	virtual Error save_shader_cache(const String &p_filename) const = 0;
+	virtual Error load_shader_cache(const String &p_filename) = 0;
+
 	/* COMMON MATERIAL API */
 
 	enum {

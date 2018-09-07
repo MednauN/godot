@@ -511,6 +511,10 @@ public:
 	virtual void shader_set_default_texture_param(RID p_shader, const StringName &p_name, RID p_texture);
 	virtual RID shader_get_default_texture_param(RID p_shader, const StringName &p_name) const;
 
+	virtual bool is_shader_cache_changed() const;
+	virtual Error save_shader_cache(const String &p_filename) const;
+	virtual Error load_shader_cache(const String &p_filename);
+
 	void _update_shader(Shader *p_shader) const;
 	void update_dirty_shaders();
 

@@ -128,6 +128,10 @@ public:
 	FUNC3(shader_set_default_texture_param, RID, const StringName &, RID)
 	FUNC2RC(RID, shader_get_default_texture_param, RID, const StringName &)
 
+	FUNC0RC(bool, is_shader_cache_changed)
+	FUNC1RC(Error, save_shader_cache, const String &)
+	FUNC1R(Error, load_shader_cache, const String &)
+
 	/* COMMON MATERIAL API */
 
 	FUNCRID(material)

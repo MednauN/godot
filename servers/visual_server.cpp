@@ -1689,6 +1689,9 @@ void VisualServer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("shader_get_param_list", "shader"), &VisualServer::_shader_get_param_list_bind);
 	ClassDB::bind_method(D_METHOD("shader_set_default_texture_param", "shader", "name", "texture"), &VisualServer::shader_set_default_texture_param);
 	ClassDB::bind_method(D_METHOD("shader_get_default_texture_param", "shader", "name"), &VisualServer::shader_get_default_texture_param);
+	ClassDB::bind_method(D_METHOD("is_shader_cache_changed"), &VisualServer::is_shader_cache_changed);
+	ClassDB::bind_method(D_METHOD("save_shader_cache", "filename"), &VisualServer::save_shader_cache);
+	ClassDB::bind_method(D_METHOD("load_shader_cache", "filename"), &VisualServer::load_shader_cache);
 
 	ClassDB::bind_method(D_METHOD("material_create"), &VisualServer::material_create);
 	ClassDB::bind_method(D_METHOD("material_set_shader", "shader_material", "shader"), &VisualServer::material_set_shader);
