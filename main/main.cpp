@@ -1568,6 +1568,7 @@ bool Main::start() {
 		EditorNode *editor_node = NULL;
 		if (editor) {
 
+			Engine::get_singleton()->set_editor_hint(true);
 			editor_node = memnew(EditorNode);
 			sml->get_root()->add_child(editor_node);
 

@@ -44,7 +44,7 @@
 #include "main/main.h"
 #include "os_android.h"
 #include "thread_jandroid.h"
-#include "translation.h"
+#include "core/translation.h"
 #include <unistd.h>
 
 static JavaClassWrapper *java_class_wrapper = NULL;
