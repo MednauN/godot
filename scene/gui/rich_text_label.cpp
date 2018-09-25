@@ -351,9 +351,10 @@ int RichTextLabel::_process_line(ItemFrame *p_frame, const Vector2 &p_ofs, int &
 						line_ascent = line < l.ascent_caches.size() ? l.ascent_caches[line] : 1;
 						line_descent = line < l.descent_caches.size() ? l.descent_caches[line] : 1;
 					}
+					int cw = 0;
 					while (c[end] != 0 && !(end && c[end - 1] == ' ' && c[end] != ' ')) {
 
-						int cw = font->get_char_size(c[end], c[end + 1]).width;
+						cw = font->get_char_size(c[end], c[end + 1]).width;
 						if (c[end] == '\t') {
 							cw = tab_size * font->get_char_size(' ').width;
 						}
@@ -368,7 +369,11 @@ int RichTextLabel::_process_line(ItemFrame *p_frame, const Vector2 &p_ofs, int &
 						end++;
 					}
 					CHECK_HEIGHT(fh);
-					ENSURE_WIDTH(w);
+					if (end && c[end - 1] == ' ') {
+						ENSURE_WIDTH(w - cw);
+					} else {
+						ENSURE_WIDTH(w);
+					}
 
 					line_ascent = MAX(line_ascent, ascent);
 					line_descent = MAX(line_descent, descent);
