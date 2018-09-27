@@ -4,9 +4,12 @@
 [submodule "modules/crashlytics"]
 	path = modules/crashlytics
 	url = git@gitlab.xored.local:kingdom/godot-crashlytics.git
+	branch = new-godot
 [submodule "modules/firebase"]
 	path = modules/firebase
 	url = git@gitlab.xored.local:kingdom/firebase.git
+	branch = new-godot
 [submodule "modules/facebook"]
 	path = modules/facebook
 	url = git@gitlab.xored.local:kingdom/facebook.git
+	branch = new-godot
