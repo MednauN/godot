@@ -199,6 +199,19 @@ void ImageTexture::create_from_image(const Ref<Image> &p_image, uint32_t p_flags
 	_change_notify();
 }
 
+void ImageTexture::create_from_texture(const Ref<Texture> &p_src, const Rect2 &p_src_rect, int p_width, int p_height, Image::Format p_format, uint32_t p_flags) {
+
+	ERR_FAIL_COND(p_src.is_null());
+	Rect2 ignore;
+	Rect2 src_rect;
+	p_src->get_rect_region(ignore, p_src_rect, ignore, src_rect);
+
+
+	VisualServer::get_singleton()->texture_allocate(texture, p_width, p_height, 0, p_format, VS::TEXTURE_TYPE_2D, p_flags);
+	VisualServer::get_singleton()->texture_copy_data(p_src->get_rid(), src_rect, texture, p_width, p_height);
+	_change_notify();
+}
+
 void ImageTexture::set_flags(uint32_t p_flags) {
 
 	/*	uint32_t cube = flags & FLAG_CUBEMAP;
@@ -389,6 +402,7 @@ void ImageTexture::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("create", "width", "height", "format", "flags"), &ImageTexture::create, DEFVAL(FLAGS_DEFAULT));
 	ClassDB::bind_method(D_METHOD("create_from_image", "image", "flags"), &ImageTexture::create_from_image, DEFVAL(FLAGS_DEFAULT));
+	ClassDB::bind_method(D_METHOD("create_from_texture", "texture", "src_rect", "width", "height", "format", "flags"), &ImageTexture::create_from_texture, DEFVAL(FLAGS_DEFAULT));
 	ClassDB::bind_method(D_METHOD("get_format"), &ImageTexture::get_format);
 #ifndef DISABLE_DEPRECATED
 	ClassDB::bind_method(D_METHOD("load", "path"), &ImageTexture::load);

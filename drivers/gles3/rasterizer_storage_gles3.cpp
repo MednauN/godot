@@ -31,6 +31,7 @@
 #include "rasterizer_storage_gles3.h"
 #include "core/engine.h"
 #include "core/project_settings.h"
+#include "core/os/os.h"
 #include "rasterizer_canvas_gles3.h"
 #include "rasterizer_scene_gles3.h"
 
@@ -117,6 +118,7 @@ void glTexStorage2DCustom(GLenum target, GLsizei levels, GLenum internalformat, 
 }
 
 GLuint RasterizerStorageGLES3::system_fbo = 0;
+GLuint RasterizerStorageGLES3::offscreen_fbo[2] = {0, 0};
 
 Ref<Image> RasterizerStorageGLES3::_get_gl_image_and_format(const Ref<Image> &p_image, Image::Format p_format, uint32_t p_flags, Image::Format &r_real_format, GLenum &r_gl_format, GLenum &r_gl_internal_format, GLenum &r_gl_type, bool &r_compressed, bool &srgb) const {
 
@@ -1005,6 +1007,119 @@ void RasterizerStorageGLES3::texture_set_data_partial(RID p_texture, const Ref<I
 	}
 }
 
+void RasterizerStorageGLES3::texture_copy_data(RID p_src, const Rect2 &p_src_rect, RID p_dest, int p_dest_width, int p_dest_height) {
+	
+	Texture *src_texture = texture_owner.get(p_src);
+	ERR_FAIL_COND(!src_texture);
+	while (src_texture->proxy) {
+		src_texture = src_texture->proxy;
+	}
+	ERR_FAIL_COND(!src_texture->active);
+	
+	Texture *dest_texture = texture_owner.get(p_dest);
+	ERR_FAIL_COND(!dest_texture);
+	ERR_FAIL_COND(!dest_texture->active);
+
+	if (!offscreen_fbo[0] || !offscreen_fbo[1]) {
+		glGenFramebuffers(2, offscreen_fbo);
+	}
+
+	// Setting up dest texture
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(dest_texture->target, dest_texture->tex_id);
+
+	// Code below is copied from `texture_set_data`
+	if (dest_texture->flags & VS::TEXTURE_FLAG_MIPMAPS)
+		glTexParameteri(dest_texture->target, GL_TEXTURE_MIN_FILTER, config.use_fast_texture_filter ? GL_LINEAR_MIPMAP_NEAREST : GL_LINEAR_MIPMAP_LINEAR);
+	else {
+		if (dest_texture->flags & VS::TEXTURE_FLAG_FILTER) {
+			glTexParameteri(dest_texture->target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		} else {
+			glTexParameteri(dest_texture->target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		}
+	}
+
+	if (config.srgb_decode_supported && dest_texture->srgb) {
+
+		if (dest_texture->flags & VS::TEXTURE_FLAG_CONVERT_TO_LINEAR) {
+
+			glTexParameteri(dest_texture->target, _TEXTURE_SRGB_DECODE_EXT, _DECODE_EXT);
+			dest_texture->using_srgb = true;
+		} else {
+			glTexParameteri(dest_texture->target, _TEXTURE_SRGB_DECODE_EXT, _SKIP_DECODE_EXT);
+			dest_texture->using_srgb = false;
+		}
+	}
+
+	if (dest_texture->flags & VS::TEXTURE_FLAG_FILTER) {
+
+		glTexParameteri(dest_texture->target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	} else {
+
+		glTexParameteri(dest_texture->target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	}
+
+	if (((dest_texture->flags & VS::TEXTURE_FLAG_REPEAT) || (dest_texture->flags & VS::TEXTURE_FLAG_MIRRORED_REPEAT)) && dest_texture->target != GL_TEXTURE_CUBE_MAP) {
+
+		if (dest_texture->flags & VS::TEXTURE_FLAG_MIRRORED_REPEAT) {
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+		} else {
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		}
+	} else {
+
+		glTexParameterf(dest_texture->target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameterf(dest_texture->target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	}
+	// End copied code
+	
+	// Internal format must be GL_RGBA8 to bind to framebuffer
+	glTexImage2D(dest_texture->target, 0, GL_RGBA8, dest_texture->alloc_width, dest_texture->alloc_height, 0, dest_texture->gl_format_cache, dest_texture->gl_type_cache, NULL);
+
+	// Bind textures to framebuffers
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, offscreen_fbo[0]);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, offscreen_fbo[1]);
+
+	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dest_texture->tex_id, 0);
+	GLenum status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
+	ERR_FAIL_COND(status != GL_FRAMEBUFFER_COMPLETE);
+
+	glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, src_texture->tex_id, 0);
+	status = glCheckFramebufferStatus(GL_READ_FRAMEBUFFER);
+	ERR_FAIL_COND(status != GL_FRAMEBUFFER_COMPLETE);
+
+	// Copy from GL_READ_FRAMEBUFFER to GL_DRAW_FRAMEBUFFER
+	glBlitFramebuffer(
+		(GLint)p_src_rect.position.x, (GLint)p_src_rect.position.y, (GLint)p_src_rect.size.x, (GLint)p_src_rect.size.y, 
+		0, 0, p_dest_width, p_dest_height,
+		GL_COLOR_BUFFER_BIT, GL_LINEAR
+	);
+
+	GLenum err = glGetError();
+	ERR_FAIL_COND(err);
+
+	if (dest_texture->flags & VS::TEXTURE_FLAG_MIPMAPS) {
+
+		glGenerateMipmap(dest_texture->target);
+		dest_texture->mipmaps = 1;
+		int sz = MAX(p_dest_width, p_dest_height);
+		while (sz > 2) {
+			sz >>= 1;
+			dest_texture->mipmaps++;
+		}
+	}
+
+	// Restore framebuffer
+	if (frame.current_rt) {
+		glBindFramebuffer(GL_FRAMEBUFFER, frame.current_rt->fbo);
+	}
+	else {
+		glBindFramebuffer(GL_FRAMEBUFFER, system_fbo);
+	}
+}
+
 Ref<Image> RasterizerStorageGLES3::texture_get_data(RID p_texture, int p_layer) const {
 
 	Texture *texture = texture_owner.get(p_texture);
@@ -1094,8 +1209,65 @@ Ref<Image> RasterizerStorageGLES3::texture_get_data(RID p_texture, int p_layer) 
 	return Ref<Image>(img);
 #else
 
-	ERR_EXPLAIN("Sorry, It's not possible to obtain images back in OpenGL ES");
-	ERR_FAIL_V(Ref<Image>());
+	// Prepare framebuffer
+	if (!offscreen_fbo[0] || !offscreen_fbo[1]) {
+		glGenFramebuffers(2, offscreen_fbo);
+	}
+
+	glBindFramebuffer(GL_FRAMEBUFFER, offscreen_fbo[0]);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, texture->tex_id);
+	glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+
+	glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture->tex_id, 0);
+
+	GLenum status = glCheckFramebufferStatus(GL_READ_FRAMEBUFFER);
+	ERR_FAIL_COND_V(status != GL_FRAMEBUFFER_COMPLETE, Ref<Image>());
+
+	PoolVector<uint8_t> data;
+	int data_size = Image::get_image_data_size(texture->alloc_width, texture->alloc_height, Image::FORMAT_RGBA8, false);
+	data.resize(data_size);
+
+	// Read framebuffer into output buffer
+	{
+		PoolVector<uint8_t>::Write wb = data.write();
+		glPixelStorei(GL_PACK_ALIGNMENT, 1);
+		glReadBuffer(GL_COLOR_ATTACHMENT0);
+		glViewport(0, 0, texture->alloc_width, texture->alloc_height);
+		
+		if (texture->format == Image::FORMAT_RGBAH || texture->format == Image::FORMAT_RGBAF) {
+			PoolVector<GLfloat> fdata;
+			fdata.resize(texture->alloc_width * texture->alloc_height * 4);
+			PoolVector<GLfloat>::Write fwb = fdata.write();
+			
+			glReadPixels(0, 0, texture->alloc_width, texture->alloc_height, GL_RGBA, GL_FLOAT, fwb.ptr());
+
+			for (int i = 0, sz = fdata.size(); i < sz; ++i) {
+				wb[i] = (uint8_t)(fwb[i] * 255.0);
+			}
+		}
+		else {
+			glReadPixels(0, 0, texture->alloc_width, texture->alloc_height, GL_RGBA, GL_UNSIGNED_BYTE, wb.ptr());
+		}
+
+		GLenum err = glGetError();
+		ERR_FAIL_COND_V(err, Ref<Image>());
+	}
+
+	// Restore framebuffer and viewport
+	if (frame.current_rt) {
+		glBindFramebuffer(GL_FRAMEBUFFER, frame.current_rt->fbo);
+		glViewport(0, 0, frame.current_rt->width, frame.current_rt->height);
+	}
+	else {
+		Vector2 window_size = OS::get_singleton()->get_window_size();
+		glBindFramebuffer(GL_FRAMEBUFFER, system_fbo);
+		glViewport(0, 0, window_size.width, window_size.height);
+	}
+
+	Image *img = memnew(Image(texture->alloc_width / 4, texture->alloc_height / 4, false, Image::FORMAT_RGBA8, data));
+	return Ref<Image>(img);
 #endif
 }
 

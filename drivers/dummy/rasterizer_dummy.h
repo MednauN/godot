@@ -174,6 +174,11 @@ public:
 		t->image->create(t->width, t->height, false, t->format, p_image->get_data());
 	}
 
+	void texture_copy_data(RID p_src, const Rect2 &p_src_rect, RID p_dest, int p_dest_width, int p_dest_height) {
+		// TODO
+		ERR_PRINT("Not implemented");
+	}
+
 	void texture_set_data_partial(RID p_texture, const Ref<Image> &p_image, int src_x, int src_y, int src_w, int src_h, int dst_x, int dst_y, int p_dst_mip, int p_level) {
 		DummyTexture *t = texture_owner.get(p_texture);
 

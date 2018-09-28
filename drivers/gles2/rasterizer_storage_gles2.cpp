@@ -554,6 +554,11 @@ void RasterizerStorageGLES2::texture_set_data_partial(RID p_texture, const Ref<I
 	ERR_PRINT("Not implemented (ask Karroffel to do it :p)");
 }
 
+void RasterizerStorageGLES2::texture_copy_data(RID p_src, const Rect2 &p_src_rect, RID p_dest, int p_dest_width, int p_dest_height) {
+	// TODO
+	ERR_PRINT("Not implemented");
+}
+
 Ref<Image> RasterizerStorageGLES2::texture_get_data(RID p_texture, int p_layer) const {
 
 	Texture *texture = texture_owner.getornull(p_texture);

@@ -193,6 +193,7 @@ public:
 			int dst_x, int dst_y,
 			int p_dst_mip,
 			int p_level = 0) = 0;
+	virtual void texture_copy_data(RID p_src, const Rect2 &p_src_rect, RID p_dest, int p_dest_width, int p_dest_height) = 0;
 
 	virtual Ref<Image> texture_get_data(RID p_texture, int p_level = 0) const = 0;
 	virtual void texture_set_flags(RID p_texture, uint32_t p_flags) = 0;

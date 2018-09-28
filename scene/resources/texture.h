@@ -128,6 +128,7 @@ protected:
 public:
 	void create(int p_width, int p_height, Image::Format p_format, uint32_t p_flags = FLAGS_DEFAULT);
 	void create_from_image(const Ref<Image> &p_image, uint32_t p_flags = FLAGS_DEFAULT);
+	void create_from_texture(const Ref<Texture> &p_src, const Rect2 &p_src_rect, int p_width, int p_height, Image::Format p_format, uint32_t p_flags = FLAGS_DEFAULT);
 
 	void set_flags(uint32_t p_flags);
 	uint32_t get_flags() const;

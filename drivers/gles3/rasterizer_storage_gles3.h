@@ -53,6 +53,8 @@ class RasterizerSceneGLES3;
 void glTexStorage2DCustom(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLenum format, GLenum type);
 
 class RasterizerStorageGLES3 : public RasterizerStorage {
+	
+	static GLuint offscreen_fbo[2]; // for getting texture data
 public:
 	RasterizerCanvasGLES3 *canvas;
 	RasterizerSceneGLES3 *scene;
@@ -347,6 +349,7 @@ public:
 	virtual void texture_allocate(RID p_texture, int p_width, int p_height, int p_depth_3d, Image::Format p_format, VS::TextureType p_type, uint32_t p_flags = VS::TEXTURE_FLAGS_DEFAULT);
 	virtual void texture_set_data(RID p_texture, const Ref<Image> &p_image, int p_layer = 0);
 	virtual void texture_set_data_partial(RID p_texture, const Ref<Image> &p_image, int src_x, int src_y, int src_w, int src_h, int dst_x, int dst_y, int p_dst_mip, int p_layer = 0);
+	virtual void texture_copy_data(RID p_src, const Rect2 &p_src_rect, RID p_dest, int p_dest_width, int p_dest_height);
 	virtual Ref<Image> texture_get_data(RID p_texture, int p_layer = 0) const;
 	virtual void texture_set_flags(RID p_texture, uint32_t p_flags);
 	virtual uint32_t texture_get_flags(RID p_texture) const;

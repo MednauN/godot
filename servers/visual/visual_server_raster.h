@@ -154,6 +154,7 @@ public:
 	BIND7(texture_allocate, RID, int, int, int, Image::Format, TextureType, uint32_t)
 	BIND3(texture_set_data, RID, const Ref<Image> &, int)
 	BIND10(texture_set_data_partial, RID, const Ref<Image> &, int, int, int, int, int, int, int, int)
+	BIND5(texture_copy_data, RID, const Rect2 &, RID, int, int)
 	BIND2RC(Ref<Image>, texture_get_data, RID, int)
 	BIND2(texture_set_flags, RID, uint32_t)
 	BIND1RC(uint32_t, texture_get_flags, RID)
