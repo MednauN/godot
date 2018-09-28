@@ -57,6 +57,7 @@ HashMap<ShaderGLES3::ShaderCodeHash, ShaderGLES3::CompiledShader, ShaderGLES3::S
 	new HashMap<ShaderGLES3::ShaderCodeHash, ShaderGLES3::CompiledShader, ShaderGLES3::ShaderCodeHash>();
 
 bool ShaderGLES3::shader_cache_changed = false;
+bool ShaderGLES3::shader_cache_supported = false;
 
 //#define DEBUG_SHADER
 
@@ -541,7 +542,9 @@ bool ShaderGLES3::compile_shader_program(Version &v, CustomCode *cc) {
 		}
 	}
 
-	glProgramParameteri(v.id, GL_PROGRAM_BINARY_RETRIEVABLE_HINT, GL_TRUE);
+	if (shader_cache_supported) {
+		glProgramParameteri(v.id, GL_PROGRAM_BINARY_RETRIEVABLE_HINT, GL_TRUE);
+	}
 
 	glLinkProgram(v.id);
 
@@ -596,23 +599,29 @@ ShaderGLES3::Version *ShaderGLES3::get_current_version() {
 		v.code_version = cc->version;
 	}
 
-	ShaderCodeHash code_hash = get_code_hash(cc);
 	bool shader_loaded_from_cache = false;
 	GLint status;
+	ShaderCodeHash code_hash;
+	if (shader_cache_supported) {
 
-	if (shader_cache->has(code_hash)) {
+		code_hash = get_code_hash(cc);
 
-		v.id = glCreateProgram();
-		ERR_FAIL_COND_V(v.id == 0, NULL);
+		if (shader_cache->has(code_hash)) {
 
-		CompiledShader compiled_shader = shader_cache->get(code_hash);
-		glProgramBinary(v.id, compiled_shader.binary_format, compiled_shader.binary.ptr(), compiled_shader.binary.size());
+			v.id = glCreateProgram();
+			ERR_FAIL_COND_V(v.id == 0, NULL);
 
-		glGetProgramiv(v.id, GL_LINK_STATUS, &status);
-		if (status != GL_FALSE) {
-			shader_loaded_from_cache = true;
+			CompiledShader compiled_shader = shader_cache->get(code_hash);
+			glProgramBinary(v.id, compiled_shader.binary_format, compiled_shader.binary.ptr(), compiled_shader.binary.size());
+
+			glGetProgramiv(v.id, GL_LINK_STATUS, &status);
+			if (status != GL_FALSE) {
+				shader_loaded_from_cache = true;
+			}
 		}
 	}
+
+
 
 	if (!shader_loaded_from_cache) {
 
@@ -649,6 +658,9 @@ ShaderGLES3::Version *ShaderGLES3::get_current_version() {
 			err_string += ilogmem;
 			ERR_PRINTS(err_string);
 			ERR_PRINT(err_string.ascii().get_data());
+			if (cc) {
+				ERR_PRINT(cc->uniforms.ascii().get_data());
+			}
 			Memory::free_static(ilogmem);
 			glDeleteShader(v.frag_id);
 			glDeleteShader(v.vert_id);
@@ -659,17 +671,19 @@ ShaderGLES3::Version *ShaderGLES3::get_current_version() {
 		}
 
 		// store compiled shader in cache
-		GLint binary_size = 0;
-		glGetProgramiv(v.id, GL_PROGRAM_BINARY_LENGTH, &binary_size);
+		if (shader_cache_supported) {
+			GLint binary_size = 0;
+			glGetProgramiv(v.id, GL_PROGRAM_BINARY_LENGTH, &binary_size);
 
-		CompiledShader compiled_shader;
-		compiled_shader.binary.resize(binary_size);
-		GLsizei binary_bytes_written;
-		glGetProgramBinary(v.id, binary_size, &binary_bytes_written, &compiled_shader.binary_format, compiled_shader.binary.ptrw());
-		if (binary_bytes_written > 0) {
-			compiled_shader.binary.resize(binary_bytes_written);
-			shader_cache->set(code_hash, compiled_shader);
-			shader_cache_changed = true;
+			CompiledShader compiled_shader;
+			compiled_shader.binary.resize(binary_size);
+			GLsizei binary_bytes_written;
+			glGetProgramBinary(v.id, binary_size, &binary_bytes_written, &compiled_shader.binary_format, compiled_shader.binary.ptrw());
+			if (binary_bytes_written > 0) {
+				compiled_shader.binary.resize(binary_bytes_written);
+				shader_cache->set(code_hash, compiled_shader);
+				shader_cache_changed = true;
+			}
 		}
 	}
 

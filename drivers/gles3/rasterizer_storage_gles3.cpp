@@ -7764,12 +7764,15 @@ void RasterizerStorageGLES3::initialize() {
 	config.etc2_supported = false;
 	config.s3tc_supported = true;
 	config.rgtc_supported = true; //RGTC - core since OpenGL version 3.0
+	config.shader_cache_supported = config.extensions.has("GL_ARB_get_program_binary");
 #else
 	config.etc2_supported = true;
 	config.hdr_supported = config.extensions.has("GL_EXT_color_buffer_half_float");
 	config.s3tc_supported = config.extensions.has("GL_EXT_texture_compression_dxt1") || config.extensions.has("GL_EXT_texture_compression_s3tc") || config.extensions.has("WEBGL_compressed_texture_s3tc");
 	config.rgtc_supported = config.extensions.has("GL_EXT_texture_compression_rgtc") || config.extensions.has("GL_ARB_texture_compression_rgtc");
+	config.shader_cache_supported = true;
 #endif
+	ShaderGLES3::shader_cache_supported = config.shader_cache_supported;
 
 	config.pvrtc_supported = config.extensions.has("GL_IMG_texture_compression_pvrtc");
 	config.srgb_decode_supported = config.extensions.has("GL_EXT_texture_sRGB_decode");

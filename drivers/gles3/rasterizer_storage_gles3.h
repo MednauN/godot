@@ -100,6 +100,7 @@ public:
 
 		bool no_depth_prepass;
 		bool force_vertex_shading;
+		bool shader_cache_supported;
 	} config;
 
 	mutable struct Shaders {

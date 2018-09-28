@@ -19,7 +19,7 @@ struct Attractor {
 	float attenuation;
 };
 
-#define MAX_ATTRACTORS 64
+#define MAX_ATTRACTORS 4
 
 uniform bool emitting;
 uniform float system_phase;

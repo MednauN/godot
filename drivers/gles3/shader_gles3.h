@@ -329,6 +329,7 @@ public:
 	enum {
 		CUSTOM_SHADER_DISABLED = 0
 	};
+	static bool shader_cache_supported;
 
 	GLint get_uniform_location(const String &p_name) const;
 	GLint get_uniform_location(int p_index) const;
