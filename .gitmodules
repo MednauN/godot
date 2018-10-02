@@ -1,6 +1,7 @@
 [submodule "modules/godotgoogleservices"]
 	path = modules/godotgoogleservices
 	url = git@gitlab.xored.local:kingdom/godotgoogleservices.git
+	branch = new-godot
 [submodule "modules/crashlytics"]
 	path = modules/crashlytics
 	url = git@gitlab.xored.local:kingdom/godot-crashlytics.git
