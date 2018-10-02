@@ -103,17 +103,6 @@ int OSIPhone::get_current_video_driver() const {
 	return video_driver_index;
 }
 
-void OSIPhone::initialize_logger() {
-	Vector<Logger *> loggers;
-	loggers.push_back(memnew(SyslogLogger));
-#ifdef DEBUG_ENABLED
-	// it seems iOS app's stdout/stderr is only obtainable if you launch it from Xcode
-	loggers.push_back(memnew(StdLogger));
-#endif
-	loggers.push_back(memnew(RotatedFileLogger("user://logs/log.txt")));
-	_set_logger(memnew(CompositeLogger(loggers)));
-}
-
 Error OSIPhone::initialize(const VideoMode &p_desired, int p_video_driver, int p_audio_driver) {
 
 	video_driver_index = VIDEO_DRIVER_GLES3;

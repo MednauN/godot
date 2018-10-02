@@ -34,11 +34,14 @@ import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.AlertDialog;
 import android.app.PendingIntent;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.content.pm.ConfigurationInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.graphics.Color;
 import android.graphics.Point;
@@ -48,13 +51,11 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Build;
-import android.content.pm.ConfigurationInfo;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Messenger;
 import android.provider.Settings.Secure;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.Display;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -71,27 +72,6 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-
-import android.content.ClipboardManager;
-import android.content.ClipData;
-
-import java.lang.reflect.Method;
-import java.util.List;
-import java.util.ArrayList;
-
-import org.godotengine.godot.payments.PaymentsManager;
-
-import android.provider.Settings.Secure;
-import android.widget.FrameLayout;
-
-import org.godotengine.godot.input.*;
-
-import java.io.InputStream;
-import javax.microedition.khronos.opengles.GL10;
-import java.security.MessageDigest;
-import java.io.File;
-import java.io.FileInputStream;
-import java.util.LinkedList;
 
 import com.google.android.vending.expansion.downloader.DownloadProgressInfo;
 import com.google.android.vending.expansion.downloader.DownloaderClientMarshaller;
@@ -281,16 +261,6 @@ public class Godot extends Activity implements SensorEventListener, IDownloaderC
 	public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
 		for (int i = 0; i < singleton_count; i++) {
 			singletons[i].onMainRequestPermissionsResult(requestCode, permissions, grantResults);
-		}
-	};
-	public boolean deviceHasNavigationBar() {
-		int id = getResources().getIdentifier("config_showNavigationBar", "bool", "android");
-		if (id > 0) {
-			return getResources().getBoolean(id);
-		} else {
-			boolean hasMenuKey = ViewConfiguration.get(this).hasPermanentMenuKey();
-			boolean hasBackKey = KeyCharacterMap.deviceHasKey(KeyEvent.KEYCODE_BACK);
-			return !hasMenuKey && !hasBackKey;
 		}
 	}
 

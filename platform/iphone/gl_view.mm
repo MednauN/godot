@@ -34,7 +34,7 @@
 #include "core/project_settings.h"
 #include "os_iphone.h"
 #include "servers/audio_server.h"
-#include "translation.h"
+#include "core/translation.h"
 
 #import <OpenGLES/EAGLDrawable.h>
 #import <QuartzCore/QuartzCore.h>
