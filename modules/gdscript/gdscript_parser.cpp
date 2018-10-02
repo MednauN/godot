@@ -6457,51 +6457,32 @@ bool GDScriptParser::_get_function_signature(DataType &p_base_type, const String
 			}
 			return true;
 		}
-		base_script = base_script->get_base_script();
-	}
 
 #ifdef DEBUG_METHODS_ENABLED
 
-	// Only native remains
-	if (!ClassDB::class_exists(native)) {
-		native = "_" + native.operator String();
-	}
-	if (!ClassDB::class_exists(native)) {
-		if (!check_types) return false;
-		ERR_EXPLAIN("Parser bug: Class '" + String(native) + "' not found.");
-		ERR_FAIL_V(false);
-	}
-
-	MethodBind *method = ClassDB::get_method(native, p_function);
-
-	if (!method) {
-		// Try virtual methods
-		List<MethodInfo> virtuals;
-		ClassDB::get_virtual_methods(native, &virtuals);
-
-		for (const List<MethodInfo>::Element *E = virtuals.front(); E; E = E->next()) {
-			const MethodInfo &mi = E->get();
-			if (mi.name == p_function) {
-				r_default_arg_count = mi.default_arguments.size();
-				for (const List<PropertyInfo>::Element *pi = mi.arguments.front(); pi; pi = pi->next()) {
-					r_arg_types.push_back(_type_from_property(pi->get()));
-				}
-				r_return_type = _type_from_property(mi.return_val, false);
-				r_vararg = mi.flags & METHOD_FLAG_VARARG;
-				return true;
-			}
+		if (!(native == "") && !ClassDB::class_exists(native)) {
+			native = "_" + native.operator String();
 		}
 
-		// If the base is a script, it might be trying to access members of the Script class itself
-		if (original_type.is_meta_type && !(p_function == "new") && (original_type.kind == DataType::SCRIPT || original_type.kind == DataType::GDSCRIPT)) {
-			method = ClassDB::get_method(original_type.script_type->get_class_name(), p_function);
+		if (ClassDB::class_exists(native)) {
 
+			MethodBind *method = ClassDB::get_method(native, p_function);
 			if (method) {
-				r_static = true;
-			} else {
-				// Try virtual methods of the script type
-				virtuals.clear();
-				ClassDB::get_virtual_methods(original_type.script_type->get_class_name(), &virtuals);
+				r_default_arg_count = method->get_default_argument_count();
+				r_return_type = _type_from_property(method->get_return_info(), false);
+				r_vararg = method->is_vararg();
+
+				for (int i = 0; i < method->get_argument_count(); i++) {
+					r_arg_types.push_back(_type_from_property(method->get_argument_info(i)));
+				}
+				return true;
+			}
+			else {
+
+				// Try virtual methods
+				List<MethodInfo> virtuals;
+				ClassDB::get_virtual_methods(native, &virtuals);
+
 				for (const List<MethodInfo>::Element *E = virtuals.front(); E; E = E->next()) {
 					const MethodInfo &mi = E->get();
 					if (mi.name == p_function) {
@@ -6510,29 +6491,91 @@ bool GDScriptParser::_get_function_signature(DataType &p_base_type, const String
 							r_arg_types.push_back(_type_from_property(pi->get()));
 						}
 						r_return_type = _type_from_property(mi.return_val, false);
-						r_static = true;
 						r_vararg = mi.flags & METHOD_FLAG_VARARG;
 						return true;
 					}
 				}
-				return false;
 			}
+		}
+#endif
+
+		base_script = base_script->get_base_script();
+	}
+
+#ifdef DEBUG_METHODS_ENABLED
+
+	if (!(native == "")) {
+
+		if (!ClassDB::class_exists(native)) {
+			native = "_" + native.operator String();
+		}
+		if (!ClassDB::class_exists(native)) {
+			if (!check_types) return false;
+			ERR_EXPLAIN("Parser bug: Class '" + String(native) + "' not found.");
+			ERR_FAIL_V(false);
+		}
+
+		MethodBind *method = ClassDB::get_method(native, p_function);
+
+		if (method) {
+
+			r_default_arg_count = method->get_default_argument_count();
+			r_return_type = _type_from_property(method->get_return_info(), false);
+			r_vararg = method->is_vararg();
+
+			for (int i = 0; i < method->get_argument_count(); i++) {
+				r_arg_types.push_back(_type_from_property(method->get_argument_info(i)));
+			}
+			return true;
+
 		} else {
-			return false;
+			// Try virtual methods
+			List<MethodInfo> virtuals;
+			ClassDB::get_virtual_methods(native, &virtuals);
+
+			for (const List<MethodInfo>::Element *E = virtuals.front(); E; E = E->next()) {
+				const MethodInfo &mi = E->get();
+				if (mi.name == p_function) {
+					r_default_arg_count = mi.default_arguments.size();
+					for (const List<PropertyInfo>::Element *pi = mi.arguments.front(); pi; pi = pi->next()) {
+						r_arg_types.push_back(_type_from_property(pi->get()));
+					}
+					r_return_type = _type_from_property(mi.return_val, false);
+					r_vararg = mi.flags & METHOD_FLAG_VARARG;
+					return true;
+				}
+			}
 		}
 	}
 
-	r_default_arg_count = method->get_default_argument_count();
-	r_return_type = _type_from_property(method->get_return_info(), false);
-	r_vararg = method->is_vararg();
+	// If the base is a script, it might be trying to access members of the Script class itself
+	if (original_type.is_meta_type && !(p_function == "new") && (original_type.kind == DataType::SCRIPT || original_type.kind == DataType::GDSCRIPT)) {
+		MethodBind *method = ClassDB::get_method(original_type.script_type->get_class_name(), p_function);
 
-	for (int i = 0; i < method->get_argument_count(); i++) {
-		r_arg_types.push_back(_type_from_property(method->get_argument_info(i)));
+		if (method) {
+			r_static = true;
+		} else {
+			// Try virtual methods of the script type
+			List<MethodInfo> virtuals;
+			ClassDB::get_virtual_methods(original_type.script_type->get_class_name(), &virtuals);
+			for (const List<MethodInfo>::Element *E = virtuals.front(); E; E = E->next()) {
+				const MethodInfo &mi = E->get();
+				if (mi.name == p_function) {
+					r_default_arg_count = mi.default_arguments.size();
+					for (const List<PropertyInfo>::Element *pi = mi.arguments.front(); pi; pi = pi->next()) {
+						r_arg_types.push_back(_type_from_property(pi->get()));
+					}
+					r_return_type = _type_from_property(mi.return_val, false);
+					r_static = true;
+					r_vararg = mi.flags & METHOD_FLAG_VARARG;
+					return true;
+				}
+			}
+			return false;
+		}
 	}
-	return true;
-#else
-	return false;
 #endif
+	return false;
 }
 
 GDScriptParser::DataType GDScriptParser::_reduce_function_call_type(const OperatorNode *p_call) {
@@ -6954,57 +6997,102 @@ bool GDScriptParser::_get_member_type(const DataType &p_base_type, const StringN
 		}
 
 		base_type = _type_from_variant(scr.operator Variant());
-		if (!native) {
-			native = scr->get_instance_base_type();
-		}
+		native = scr->get_instance_base_type();
 		scr = scr->get_base_script();
+
+		if (!(native == "") && !ClassDB::class_exists(native)) {
+			native = "_" + native.operator String();
+		}
+		if (ClassDB::class_exists(native)) {
+			
+			bool valid = false;
+			ClassDB::get_integer_constant(native, p_member, &valid);
+			if (valid) {
+				DataType ct;
+				ct.has_type = true;
+				ct.is_constant = true;
+				ct.kind = DataType::BUILTIN;
+				ct.builtin_type = Variant::INT;
+				r_member_type = ct;
+				return true;
+			}
+
+			if (!base_type.is_meta_type) {
+				List<PropertyInfo> properties;
+				ClassDB::get_property_list(native, &properties);
+				for (List<PropertyInfo>::Element *E = properties.front(); E; E = E->next()) {
+					if (E->get().name == p_member) {
+						// Check if a getter exists
+						StringName getter_name = ClassDB::get_property_getter(native, p_member);
+						if (getter_name != StringName()) {
+							// Use the getter return type
+#ifdef DEBUG_METHODS_ENABLED
+							MethodBind *getter_method = ClassDB::get_method(native, getter_name);
+							if (getter_method) {
+								r_member_type = _type_from_property(getter_method->get_return_info());
+							} else {
+								r_member_type = DataType();
+							}
+#else
+							r_member_type = DataType();
+#endif
+						} else {
+							r_member_type = _type_from_property(E->get());
+						}
+						return true;
+					}
+				}
+			}
+		}
 	}
 
 	// Check ClassDB
-	if (!ClassDB::class_exists(native)) {
-		native = "_" + native.operator String();
-	}
-	if (!ClassDB::class_exists(native)) {
-		if (!check_types) return false;
-		ERR_EXPLAIN("Parser bug: Class '" + String(native) + "' not found.");
-		ERR_FAIL_V(false);
-	}
+	if (!(native == "")) {
+		if (!ClassDB::class_exists(native)) {
+			native = "_" + native.operator String();
+		}
+		if (!ClassDB::class_exists(native)) {
+			if (!check_types) return false;
+			ERR_EXPLAIN("Parser bug: Class '" + String(native) + "' not found.");
+			ERR_FAIL_V(false);
+		}
 
-	bool valid = false;
-	ClassDB::get_integer_constant(native, p_member, &valid);
-	if (valid) {
-		DataType ct;
-		ct.has_type = true;
-		ct.is_constant = true;
-		ct.kind = DataType::BUILTIN;
-		ct.builtin_type = Variant::INT;
-		r_member_type = ct;
-		return true;
-	}
+		bool valid = false;
+		ClassDB::get_integer_constant(native, p_member, &valid);
+		if (valid) {
+			DataType ct;
+			ct.has_type = true;
+			ct.is_constant = true;
+			ct.kind = DataType::BUILTIN;
+			ct.builtin_type = Variant::INT;
+			r_member_type = ct;
+			return true;
+		}
 
-	if (!base_type.is_meta_type) {
-		List<PropertyInfo> properties;
-		ClassDB::get_property_list(native, &properties);
-		for (List<PropertyInfo>::Element *E = properties.front(); E; E = E->next()) {
-			if (E->get().name == p_member) {
-				// Check if a getter exists
-				StringName getter_name = ClassDB::get_property_getter(native, p_member);
-				if (getter_name != StringName()) {
-					// Use the getter return type
+		if (!base_type.is_meta_type) {
+			List<PropertyInfo> properties;
+			ClassDB::get_property_list(native, &properties);
+			for (List<PropertyInfo>::Element *E = properties.front(); E; E = E->next()) {
+				if (E->get().name == p_member) {
+					// Check if a getter exists
+					StringName getter_name = ClassDB::get_property_getter(native, p_member);
+					if (getter_name != StringName()) {
+						// Use the getter return type
 #ifdef DEBUG_METHODS_ENABLED
-					MethodBind *getter_method = ClassDB::get_method(native, getter_name);
-					if (getter_method) {
-						r_member_type = _type_from_property(getter_method->get_return_info());
-					} else {
-						r_member_type = DataType();
-					}
+						MethodBind *getter_method = ClassDB::get_method(native, getter_name);
+						if (getter_method) {
+							r_member_type = _type_from_property(getter_method->get_return_info());
+						} else {
+							r_member_type = DataType();
+						}
 #else
-					r_member_type = DataType();
+						r_member_type = DataType();
 #endif
-				} else {
-					r_member_type = _type_from_property(E->get());
+					} else {
+						r_member_type = _type_from_property(E->get());
+					}
+					return true;
 				}
-				return true;
 			}
 		}
 	}
@@ -7012,6 +7100,7 @@ bool GDScriptParser::_get_member_type(const DataType &p_base_type, const StringN
 	// If the base is a script, it might be trying to access members of the Script class itself
 	if (p_base_type.is_meta_type && (p_base_type.kind == DataType::SCRIPT || p_base_type.kind == DataType::GDSCRIPT)) {
 		native = p_base_type.script_type->get_class_name();
+		bool valid = false;
 		ClassDB::get_integer_constant(native, p_member, &valid);
 		if (valid) {
 			DataType ct;
