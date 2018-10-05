@@ -91,6 +91,10 @@ void AudioStreamPlayer2D::_mix_audio() {
 
 		int cc = AudioServer::get_singleton()->get_channel_count();
 
+		if (AudioServer::get_singleton()->is_bus_mute(current.bus_index)) {
+			cc = 0;
+		}
+
 		if (cc == 1) {
 			AudioFrame *target = AudioServer::get_singleton()->thread_get_channel_mix_buffer(current.bus_index, 0);
 

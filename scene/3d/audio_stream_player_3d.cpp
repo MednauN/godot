@@ -106,6 +106,10 @@ void AudioStreamPlayer3D::_mix_audio() {
 
 		int buffers = AudioServer::get_singleton()->get_channel_count();
 
+		if (AudioServer::get_singleton()->is_bus_mute(current.bus_index)) {
+			buffers = 0;
+		}
+
 		for (int k = 0; k < buffers; k++) {
 			AudioFrame target_volume = stream_paused_fade_out ? AudioFrame(0.f, 0.f) : current.vol[k];
 			AudioFrame vol_prev = stream_paused_fade_in ? AudioFrame(0.f, 0.f) : prev_outputs[i].vol[k];
