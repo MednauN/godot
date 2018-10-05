@@ -1990,6 +1990,9 @@ SceneTree::SceneTree() {
 
 	GLOBAL_DEF("rendering/quality/direct_render/direct_render", true);
 	root->set_direct_render(GLOBAL_GET("rendering/quality/direct_render/direct_render"));
+	
+	GLOBAL_DEF("rendering/quality/direct_render/post_processing", true);
+	root->set_post_processing(GLOBAL_GET("rendering/quality/direct_render/post_processing"));
 
 	VS::get_singleton()->scenario_set_reflection_atlas_size(root->get_world()->get_scenario(), ref_atlas_size, ref_atlas_subdiv);
 

@@ -242,6 +242,7 @@ private:
 
 	MSAA msaa;
 	bool hdr;
+	bool post_processing;
 
 	Ref<ViewportTexture> default_texture;
 	Set<ViewportTexture *> viewport_textures;
@@ -428,6 +429,9 @@ public:
 
 	void set_hdr(bool p_hdr);
 	bool get_hdr() const;
+
+	void set_post_processing(bool p_post_processing);
+	bool get_post_processing() const;
 
 	Vector2 get_camera_coords(const Vector2 &p_viewport_coords) const;
 	Vector2 get_camera_rect_size() const;

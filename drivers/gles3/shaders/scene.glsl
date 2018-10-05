@@ -1563,6 +1563,16 @@ void gi_probes_compute(vec3 pos, vec3 normal, float roughness, inout vec3 out_sp
 
 #endif
 
+
+#ifdef NO_POSTPROCESS
+
+vec3 linear_to_srgb(vec3 color) { // convert linear rgb to srgb, assumes clamped input in range [0;1]
+	const vec3 a = vec3(0.055f);
+	return mix((vec3(1.0f) + a) * pow(color.rgb, vec3(1.0f / 2.4f)) - a, 12.92f * color.rgb, lessThan(color.rgb, vec3(0.0031308f)));
+}
+
+#endif
+
 void main() {
 
 #ifdef RENDER_DEPTH_DUAL_PARABOLOID
@@ -2089,6 +2099,10 @@ FRAGMENT_SHADER_CODE
 #endif
 
 #else //USE_MULTIPLE_RENDER_TARGETS
+
+#ifdef NO_POSTPROCESS
+	albedo = linear_to_srgb(albedo);
+#endif
 
 #ifdef SHADELESS
 	frag_color = vec4(albedo, alpha);

@@ -2664,6 +2664,21 @@ bool Viewport::get_hdr() const {
 	return hdr;
 }
 
+void Viewport::set_post_processing(bool p_post_processing) {
+
+	if (post_processing == p_post_processing) {
+		return;
+	}
+
+	post_processing = p_post_processing;
+	VS::get_singleton()->viewport_set_post_processing(viewport, p_post_processing);
+}
+
+bool Viewport::get_post_processing() const {
+
+	return post_processing;
+}
+
 void Viewport::set_usage(Usage p_usage) {
 
 	usage = p_usage;
@@ -2755,6 +2770,9 @@ void Viewport::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_hdr", "enable"), &Viewport::set_hdr);
 	ClassDB::bind_method(D_METHOD("get_hdr"), &Viewport::get_hdr);
 
+	ClassDB::bind_method(D_METHOD("set_post_processing", "enable"), &Viewport::set_post_processing);
+	ClassDB::bind_method(D_METHOD("get_post_processing"), &Viewport::get_post_processing);
+
 	ClassDB::bind_method(D_METHOD("set_usage", "usage"), &Viewport::set_usage);
 	ClassDB::bind_method(D_METHOD("get_usage"), &Viewport::get_usage);
 
@@ -2830,6 +2848,7 @@ void Viewport::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "direct_render"), "set_direct_render", "has_direct_render");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "msaa", PROPERTY_HINT_ENUM, "Disabled,2x,4x,8x,16x"), "set_msaa", "get_msaa");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "hdr"), "set_hdr", "get_hdr");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "post_processing"), "set_post_processing", "get_post_processing");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "disable_3d"), "set_disable_3d", "is_3d_disabled");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "keep_3d_linear"), "set_keep_3d_linear", "get_keep_3d_linear");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "usage", PROPERTY_HINT_ENUM, "2D,2D No-Sampling,3D,3D No-Effects"), "set_usage", "get_usage");
@@ -2979,6 +2998,7 @@ Viewport::Viewport() {
 
 	msaa = MSAA_DISABLED;
 	hdr = true;
+	post_processing = true;
 
 	usage = USAGE_3D;
 	debug_draw = DEBUG_DRAW_DISABLED;

@@ -6753,7 +6753,7 @@ void RasterizerStorageGLES3::_render_target_allocate(RenderTarget *rt) {
 	GLuint color_type;
 	Image::Format image_format;
 
-	bool hdr = rt->flags[RENDER_TARGET_HDR] && config.hdr_supported;
+	bool hdr = rt->flags[RENDER_TARGET_HDR] && config.hdr_supported && !rt->flags[RENDER_TARGET_NO_POSTPROCESS];
 	//hdr = false;
 
 	if (!hdr || rt->flags[RENDER_TARGET_NO_3D]) {
@@ -7174,7 +7174,8 @@ void RasterizerStorageGLES3::render_target_set_flag(RID p_render_target, RenderT
 		case RENDER_TARGET_HDR:
 		case RENDER_TARGET_NO_3D:
 		case RENDER_TARGET_NO_SAMPLING:
-		case RENDER_TARGET_NO_3D_EFFECTS: {
+		case RENDER_TARGET_NO_3D_EFFECTS:
+		case RENDER_TARGET_NO_POSTPROCESS: {
 			//must reset for these formats
 			_render_target_clear(rt);
 			_render_target_allocate(rt);

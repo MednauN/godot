@@ -239,18 +239,38 @@ void RasterizerGLES3::set_current_render_target(RID p_render_target) {
 		glClear(GL_COLOR_BUFFER_BIT);
 	}
 
+	
+	int old_viewport_width = 0;
+	int old_viewport_height = 0;
+	if (storage->frame.current_rt) {
+		old_viewport_width = storage->frame.current_rt->width;
+		old_viewport_height = storage->frame.current_rt->height;
+	} else {
+		Size2 win_size = OS::get_singleton()->get_window_size();
+		old_viewport_width = win_size.width;
+		old_viewport_height = win_size.height;
+	}
+
 	if (p_render_target.is_valid()) {
+
 		RasterizerStorageGLES3::RenderTarget *rt = storage->render_target_owner.getornull(p_render_target);
 		storage->frame.current_rt = rt;
 		ERR_FAIL_COND(!rt);
 		storage->frame.clear_request = false;
 
-		glViewport(0, 0, rt->width, rt->height);
+		if (old_viewport_width != rt->width || old_viewport_height != rt->height) {
+			glViewport(0, 0, rt->width, rt->height);
+		}
 
 	} else {
 		storage->frame.current_rt = NULL;
 		storage->frame.clear_request = false;
-		glViewport(0, 0, OS::get_singleton()->get_window_size().width, OS::get_singleton()->get_window_size().height);
+
+		Size2 win_size = OS::get_singleton()->get_window_size();
+		if (old_viewport_width != win_size.width || old_viewport_height != win_size.height) {
+			glViewport(0, 0, win_size.width, win_size.height);
+		}
+
 		glBindFramebuffer(GL_FRAMEBUFFER, RasterizerStorageGLES3::system_fbo);
 	}
 }

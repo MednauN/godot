@@ -3569,6 +3569,10 @@ void RasterizerSceneGLES3::_post_process(Environment *env, const CameraMatrix &p
 	//copy specular to front buffer
 	//copy diffuse to effect buffer
 
+	if (storage->frame.current_rt->flags[RasterizerStorage::RENDER_TARGET_NO_POSTPROCESS]) {
+		return;
+	}
+
 	if (storage->frame.current_rt->buffers.active) {
 		//transfer to effect buffer if using buffers, also resolve MSAA
 		glReadBuffer(GL_COLOR_ATTACHMENT0);
@@ -4045,6 +4049,9 @@ void RasterizerSceneGLES3::render_scene(const Transform &p_cam_transform, const 
 
 	storage->info.render.object_count += p_cull_count;
 
+	bool no_postprocess = storage->frame.current_rt->flags[RasterizerStorage::RENDER_TARGET_NO_POSTPROCESS];
+	state.scene_shader.set_conditional(SceneShaderGLES3::NO_POSTPROCESS, no_postprocess);
+
 	Environment *env = environment_owner.getornull(p_environment);
 	ShadowAtlas *shadow_atlas = shadow_atlas_owner.getornull(p_shadow_atlas);
 	ReflectionAtlas *reflection_atlas = reflection_atlas_owner.getornull(p_reflection_atlas);
@@ -4099,8 +4106,14 @@ void RasterizerSceneGLES3::render_scene(const Transform &p_cam_transform, const 
 		glDepthMask(GL_TRUE);
 		glEnable(GL_DEPTH_TEST);
 		glDisable(GL_SCISSOR_TEST);
-		glBindFramebuffer(GL_FRAMEBUFFER, storage->frame.current_rt->buffers.fbo);
-		glDrawBuffers(0, NULL);
+		if (no_postprocess) {
+
+			glBindFramebuffer(GL_FRAMEBUFFER, storage->frame.current_rt->fbo);
+		} else {
+
+			glBindFramebuffer(GL_FRAMEBUFFER, storage->frame.current_rt->buffers.fbo);
+			glDrawBuffers(0, NULL);
+		}
 
 		glViewport(0, 0, storage->frame.current_rt->width, storage->frame.current_rt->height);
 
@@ -4117,7 +4130,7 @@ void RasterizerSceneGLES3::render_scene(const Transform &p_cam_transform, const 
 
 		glColorMask(1, 1, 1, 1);
 
-		if (state.used_contact_shadows) {
+		if (state.used_contact_shadows && !no_postprocess) {
 
 			glBindFramebuffer(GL_READ_FRAMEBUFFER, storage->frame.current_rt->buffers.fbo);
 			glReadBuffer(GL_COLOR_ATTACHMENT0);
@@ -4223,7 +4236,10 @@ void RasterizerSceneGLES3::render_scene(const Transform &p_cam_transform, const 
 
 		} else {
 
-			if (storage->frame.current_rt->buffers.active) {
+			if (no_postprocess) {
+				current_fbo = storage->frame.current_rt->fbo;
+			}
+			else if (storage->frame.current_rt->buffers.active) {
 				current_fbo = storage->frame.current_rt->buffers.fbo;
 			} else {
 				current_fbo = storage->frame.current_rt->effects.mip_maps[0].sizes[0].fbo;
@@ -4232,9 +4248,12 @@ void RasterizerSceneGLES3::render_scene(const Transform &p_cam_transform, const 
 			glBindFramebuffer(GL_FRAMEBUFFER, current_fbo);
 			state.scene_shader.set_conditional(SceneShaderGLES3::USE_MULTIPLE_RENDER_TARGETS, false);
 
-			Vector<GLenum> draw_buffers;
-			draw_buffers.push_back(GL_COLOR_ATTACHMENT0);
-			glDrawBuffers(draw_buffers.size(), draw_buffers.ptr());
+			if (current_fbo) {
+
+				Vector<GLenum> draw_buffers;
+				draw_buffers.push_back(GL_COLOR_ATTACHMENT0);
+				glDrawBuffers(draw_buffers.size(), draw_buffers.ptr());
+			}
 		}
 	}
 

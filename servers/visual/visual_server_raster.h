@@ -491,6 +491,7 @@ public:
 	BIND3(viewport_set_shadow_atlas_quadrant_subdivision, RID, int, int)
 	BIND2(viewport_set_msaa, RID, ViewportMSAA)
 	BIND2(viewport_set_hdr, RID, bool)
+	BIND2(viewport_set_post_processing, RID, bool)
 	BIND2(viewport_set_usage, RID, ViewportUsage)
 
 	BIND2R(int, viewport_get_render_info, RID, ViewportRenderInfo)
