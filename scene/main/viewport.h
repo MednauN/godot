@@ -196,6 +196,7 @@ private:
 	ClearMode clear_mode;
 	bool filter;
 	bool gen_mipmaps;
+	bool direct_render;
 
 	bool snap_controls_to_pixels;
 
@@ -395,6 +396,9 @@ public:
 
 	void set_transparent_background(bool p_enable);
 	bool has_transparent_background() const;
+
+	void set_direct_render(bool p_enable);
+	bool has_direct_render() const;
 
 	void set_size_override(bool p_enable, const Size2 &p_size = Size2(-1, -1), const Vector2 &p_margin = Vector2());
 	Size2 get_size_override() const;

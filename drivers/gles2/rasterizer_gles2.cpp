@@ -458,6 +458,11 @@ void RasterizerGLES2::end_frame(bool p_swap_buffers) {
 		glFinish();
 }
 
+void RasterizerGLES2::set_screen_direct_render(bool p_enable) {
+
+	print_error("Not implemented");
+}
+
 void RasterizerGLES2::finalize() {
 }
 

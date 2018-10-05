@@ -390,6 +390,7 @@ public:
 	FUNC2(viewport_set_vflip, RID, bool)
 
 	FUNC1RC(RID, viewport_get_texture, RID)
+	FUNC1(viewport_refresh_texture, RID)
 
 	FUNC2(viewport_set_hide_scenario, RID, bool)
 	FUNC2(viewport_set_hide_canvas, RID, bool)
@@ -404,6 +405,7 @@ public:
 	FUNC2(viewport_remove_canvas, RID, RID)
 	FUNC3(viewport_set_canvas_transform, RID, RID, const Transform2D &)
 	FUNC2(viewport_set_transparent_background, RID, bool)
+	FUNC2(viewport_set_direct_render, RID, bool)
 
 	FUNC2(viewport_set_global_canvas_transform, RID, const Transform2D &)
 	FUNC3(viewport_set_canvas_layer, RID, RID, int)

@@ -468,6 +468,7 @@ public:
 	BIND2(viewport_set_vflip, RID, bool)
 
 	BIND1RC(RID, viewport_get_texture, RID)
+	BIND1(viewport_refresh_texture, RID)
 
 	BIND2(viewport_set_hide_scenario, RID, bool)
 	BIND2(viewport_set_hide_canvas, RID, bool)
@@ -482,6 +483,7 @@ public:
 	BIND2(viewport_remove_canvas, RID, RID)
 	BIND3(viewport_set_canvas_transform, RID, RID, const Transform2D &)
 	BIND2(viewport_set_transparent_background, RID, bool)
+	BIND2(viewport_set_direct_render, RID, bool)
 
 	BIND2(viewport_set_global_canvas_transform, RID, const Transform2D &)
 	BIND3(viewport_set_canvas_layer, RID, RID, int)

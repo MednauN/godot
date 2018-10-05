@@ -3924,6 +3924,7 @@ void RasterizerSceneGLES3::_post_process(Environment *env, const CameraMatrix &p
 		glViewport(0, 0, storage->frame.current_rt->width, storage->frame.current_rt->height);
 	}
 
+	bool need_invalidate_fbo = storage->frame.current_rt->fbo; // fbo may be 0 for direct render
 	glBindFramebuffer(GL_FRAMEBUFFER, storage->frame.current_rt->fbo);
 
 	glActiveTexture(GL_TEXTURE0);
@@ -4012,7 +4013,7 @@ void RasterizerSceneGLES3::_post_process(Environment *env, const CameraMatrix &p
 		state.tonemap_shader.set_uniform(TonemapShaderGLES3::BCS, Vector3(env->adjustments_brightness, env->adjustments_contrast, env->adjustments_saturation));
 	}
 
-	_copy_screen(true, true);
+	_copy_screen(need_invalidate_fbo, need_invalidate_fbo);
 
 	//turn off everything used
 	state.tonemap_shader.set_conditional(TonemapShaderGLES3::USE_AUTO_EXPOSURE, false);

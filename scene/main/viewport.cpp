@@ -867,6 +867,17 @@ bool Viewport::has_transparent_background() const {
 	return transparent_bg;
 }
 
+void Viewport::set_direct_render(bool p_enable) {
+
+	direct_render = p_enable;
+	VS::get_singleton()->viewport_set_direct_render(viewport, p_enable);
+}
+
+bool Viewport::has_direct_render() const {
+
+	return direct_render;
+}
+
 void Viewport::set_world_2d(const Ref<World2D> &p_world_2d) {
 	if (world_2d == p_world_2d)
 		return;
@@ -1089,6 +1100,7 @@ Viewport::UpdateMode Viewport::get_update_mode() const {
 
 Ref<ViewportTexture> Viewport::get_texture() const {
 
+	VisualServer::get_singleton()->viewport_refresh_texture(viewport);
 	return default_texture;
 }
 
@@ -2715,6 +2727,8 @@ void Viewport::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_visible_rect"), &Viewport::get_visible_rect);
 	ClassDB::bind_method(D_METHOD("set_transparent_background", "enable"), &Viewport::set_transparent_background);
 	ClassDB::bind_method(D_METHOD("has_transparent_background"), &Viewport::has_transparent_background);
+	ClassDB::bind_method(D_METHOD("set_direct_render", "enable"), &Viewport::set_direct_render);
+	ClassDB::bind_method(D_METHOD("has_direct_render"), &Viewport::has_direct_render);
 
 	ClassDB::bind_method(D_METHOD("_vp_input"), &Viewport::_vp_input);
 	ClassDB::bind_method(D_METHOD("_vp_input_text", "text"), &Viewport::_vp_input_text);
@@ -2813,6 +2827,7 @@ void Viewport::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "world_2d", PROPERTY_HINT_RESOURCE_TYPE, "World2D", 0), "set_world_2d", "get_world_2d");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "transparent_bg"), "set_transparent_background", "has_transparent_background");
 	ADD_GROUP("Rendering", "");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "direct_render"), "set_direct_render", "has_direct_render");
 	ADD_PROPERTY(PropertyInfo(Variant::INT, "msaa", PROPERTY_HINT_ENUM, "Disabled,2x,4x,8x,16x"), "set_msaa", "get_msaa");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "hdr"), "set_hdr", "get_hdr");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "disable_3d"), "set_disable_3d", "is_3d_disabled");
@@ -2910,6 +2925,7 @@ Viewport::Viewport() {
 	//internal_listener_2d = SpatialSound2DServer::get_singleton()->listener_create();
 	audio_listener_2d = false;
 	transparent_bg = false;
+	direct_render = false;
 	parent = NULL;
 	listener = NULL;
 	camera = NULL;

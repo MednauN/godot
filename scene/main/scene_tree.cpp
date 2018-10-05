@@ -1988,6 +1988,9 @@ SceneTree::SceneTree() {
 	bool hdr = GLOBAL_GET("rendering/quality/depth/hdr");
 	root->set_hdr(hdr);
 
+	GLOBAL_DEF("rendering/quality/direct_render/direct_render", true);
+	root->set_direct_render(GLOBAL_GET("rendering/quality/direct_render/direct_render"));
+
 	VS::get_singleton()->scenario_set_reflection_atlas_size(root->get_world()->get_scenario(), ref_atlas_size, ref_atlas_subdiv);
 
 	{ //load default fallback environment

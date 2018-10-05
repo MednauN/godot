@@ -147,6 +147,7 @@ FRAGMENT_SHADER_GLOBALS
 void main() {
 
 	vec4 color = color_interp;
+	vec2 normalized_uv = uv_interp;
 
 	color *= texture2D(color_texture, uv_interp);
 

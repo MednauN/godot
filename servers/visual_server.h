@@ -635,6 +635,7 @@ public:
 	virtual void viewport_set_clear_mode(RID p_viewport, ViewportClearMode p_clear_mode) = 0;
 
 	virtual RID viewport_get_texture(RID p_viewport) const = 0;
+	virtual void viewport_refresh_texture(RID p_viewport) = 0;
 
 	virtual void viewport_set_hide_scenario(RID p_viewport, bool p_hide) = 0;
 	virtual void viewport_set_hide_canvas(RID p_viewport, bool p_hide) = 0;
@@ -648,6 +649,7 @@ public:
 	virtual void viewport_remove_canvas(RID p_viewport, RID p_canvas) = 0;
 	virtual void viewport_set_canvas_transform(RID p_viewport, RID p_canvas, const Transform2D &p_offset) = 0;
 	virtual void viewport_set_transparent_background(RID p_viewport, bool p_enabled) = 0;
+	virtual void viewport_set_direct_render(RID p_viewport, bool p_direct_render) = 0;
 
 	virtual void viewport_set_global_canvas_transform(RID p_viewport, const Transform2D &p_transform) = 0;
 	virtual void viewport_set_canvas_layer(RID p_viewport, RID p_canvas, int p_layer) = 0;

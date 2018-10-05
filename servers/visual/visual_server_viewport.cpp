@@ -299,6 +299,11 @@ void VisualServerViewport::draw_viewports() {
 		} else {
 			VSG::rasterizer->set_current_render_target(vp->render_target);
 
+			if (vp->direct_render) {
+
+				VSG::rasterizer->set_screen_direct_render(true);
+			}
+
 			VSG::scene_render->set_debug_draw_mode(vp->debug_draw);
 			VSG::storage->render_info_begin_capture();
 
@@ -313,10 +318,17 @@ void VisualServerViewport::draw_viewports() {
 			vp->render_info[VS::VIEWPORT_RENDER_INFO_SURFACE_CHANGES_IN_FRAME] = VSG::storage->get_captured_render_info(VS::INFO_SURFACE_CHANGES_IN_FRAME);
 			vp->render_info[VS::VIEWPORT_RENDER_INFO_DRAW_CALLS_IN_FRAME] = VSG::storage->get_captured_render_info(VS::INFO_DRAW_CALLS_IN_FRAME);
 
+			if (vp->direct_render) {
+
+				VSG::rasterizer->set_screen_direct_render(false);
+			}
 			if (vp->viewport_to_screen_rect != Rect2()) {
 				//copy to screen if set as such
 				VSG::rasterizer->set_current_render_target(RID());
-				VSG::rasterizer->blit_render_target_to_screen(vp->render_target, vp->viewport_to_screen_rect, vp->viewport_to_screen);
+				if (!vp->direct_render) {
+
+					VSG::rasterizer->blit_render_target_to_screen(vp->render_target, vp->viewport_to_screen_rect, vp->viewport_to_screen);
+				}
 			}
 		}
 
@@ -429,6 +441,24 @@ RID VisualServerViewport::viewport_get_texture(RID p_viewport) const {
 	return VSG::storage->render_target_get_texture(viewport->render_target);
 }
 
+void VisualServerViewport::viewport_refresh_texture(RID p_viewport) {
+
+	Viewport *viewport = viewport_owner.getornull(p_viewport);
+	ERR_FAIL_COND(!viewport);
+
+	if (!viewport->direct_render) {
+		return;
+	}
+
+	VSG::rasterizer->set_current_render_target(viewport->render_target);
+
+	VSG::scene_render->set_debug_draw_mode(viewport->debug_draw);
+
+	_draw_viewport(viewport);
+
+	VSG::rasterizer->set_current_render_target(RID());
+}
+
 void VisualServerViewport::viewport_set_hide_scenario(RID p_viewport, bool p_hide) {
 
 	Viewport *viewport = viewport_owner.getornull(p_viewport);
@@ -525,6 +555,14 @@ void VisualServerViewport::viewport_set_transparent_background(RID p_viewport, b
 
 	VSG::storage->render_target_set_flag(viewport->render_target, RasterizerStorage::RENDER_TARGET_TRANSPARENT, p_enabled);
 	viewport->transparent_bg = p_enabled;
+}
+
+void VisualServerViewport::viewport_set_direct_render(RID p_viewport, bool p_direct_render) {
+
+	Viewport *viewport = viewport_owner.getornull(p_viewport);
+	ERR_FAIL_COND(!viewport);
+
+	viewport->direct_render = p_direct_render;
 }
 
 void VisualServerViewport::viewport_set_global_canvas_transform(RID p_viewport, const Transform2D &p_transform) {

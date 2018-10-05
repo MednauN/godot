@@ -75,6 +75,7 @@ public:
 		VS::ViewportClearMode clear_mode;
 
 		bool transparent_bg;
+		bool direct_render;
 
 		struct CanvasKey {
 
@@ -106,6 +107,7 @@ public:
 			update_mode = VS::VIEWPORT_UPDATE_WHEN_VISIBLE;
 			clear_mode = VS::VIEWPORT_CLEAR_ALWAYS;
 			transparent_bg = false;
+			direct_render = false;
 			disable_environment = false;
 			viewport_to_screen = 0;
 			shadow_atlas_size = 0;
@@ -161,6 +163,7 @@ public:
 	void viewport_set_clear_mode(RID p_viewport, VS::ViewportClearMode p_clear_mode);
 
 	RID viewport_get_texture(RID p_viewport) const;
+	void viewport_refresh_texture(RID p_viewport);
 
 	void viewport_set_hide_scenario(RID p_viewport, bool p_hide);
 	void viewport_set_hide_canvas(RID p_viewport, bool p_hide);
@@ -174,6 +177,7 @@ public:
 	void viewport_remove_canvas(RID p_viewport, RID p_canvas);
 	void viewport_set_canvas_transform(RID p_viewport, RID p_canvas, const Transform2D &p_offset);
 	void viewport_set_transparent_background(RID p_viewport, bool p_enabled);
+	void viewport_set_direct_render(RID p_viewport, bool p_direct_render);
 
 	void viewport_set_global_canvas_transform(RID p_viewport, const Transform2D &p_transform);
 	void viewport_set_canvas_layer(RID p_viewport, RID p_canvas, int p_layer);

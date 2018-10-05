@@ -1364,6 +1364,7 @@ public:
 		VS::ViewportMSAA msaa;
 
 		RID texture;
+		GLuint backup_fbo; //hask for direct render
 
 		RenderTarget() {
 
@@ -1372,6 +1373,7 @@ public:
 			height = 0;
 			depth = 0;
 			fbo = 0;
+			backup_fbo = 0;
 			exposure.fbo = 0;
 			buffers.fbo = 0;
 			used_in_frame = false;

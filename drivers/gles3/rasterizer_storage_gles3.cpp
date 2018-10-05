@@ -1020,6 +1020,8 @@ void RasterizerStorageGLES3::texture_copy_data(RID p_src, const Rect2 &p_src_rec
 	ERR_FAIL_COND(!dest_texture);
 	ERR_FAIL_COND(!dest_texture->active);
 
+	glGetError(); // to clear error code
+
 	if (!offscreen_fbo[0] || !offscreen_fbo[1]) {
 		glGenFramebuffers(2, offscreen_fbo);
 	}
@@ -1097,9 +1099,6 @@ void RasterizerStorageGLES3::texture_copy_data(RID p_src, const Rect2 &p_src_rec
 		GL_COLOR_BUFFER_BIT, GL_LINEAR
 	);
 
-	GLenum err = glGetError();
-	ERR_FAIL_COND(err);
-
 	if (dest_texture->flags & VS::TEXTURE_FLAG_MIPMAPS) {
 
 		glGenerateMipmap(dest_texture->target);
@@ -1118,6 +1117,9 @@ void RasterizerStorageGLES3::texture_copy_data(RID p_src, const Rect2 &p_src_rec
 	else {
 		glBindFramebuffer(GL_FRAMEBUFFER, system_fbo);
 	}
+
+	GLenum err = glGetError();
+	ERR_FAIL_COND(err);
 }
 
 Ref<Image> RasterizerStorageGLES3::texture_get_data(RID p_texture, int p_layer) const {

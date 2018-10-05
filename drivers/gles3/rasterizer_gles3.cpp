@@ -382,6 +382,27 @@ void RasterizerGLES3::output_lens_distorted_to_screen(RID p_render_target, const
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+void RasterizerGLES3::set_screen_direct_render(bool p_enable) {
+
+	RasterizerStorageGLES3::RenderTarget *rt = storage->frame.current_rt;
+	ERR_FAIL_COND(!rt);
+
+	if (!p_enable) {
+
+		ERR_FAIL_COND(!rt->backup_fbo);
+		rt->fbo = rt->backup_fbo;
+		rt->backup_fbo = 0;
+
+		glBindFramebuffer(GL_FRAMEBUFFER, rt->fbo);
+	} else {
+
+		ERR_FAIL_COND(rt->backup_fbo != 0);
+		rt->backup_fbo = rt->fbo;
+		rt->fbo = RasterizerStorageGLES3::system_fbo;
+		glBindFramebuffer(GL_FRAMEBUFFER, RasterizerStorageGLES3::system_fbo);
+	}
+}
+
 void RasterizerGLES3::end_frame(bool p_swap_buffers) {
 
 	if (OS::get_singleton()->is_layered_allowed()) {
