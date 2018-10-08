@@ -1581,7 +1581,7 @@ void CurveTexture::_update() {
 
 	Ref<Image> image = memnew(Image(_width, 1, false, Image::FORMAT_RF, data));
 
-	VS::get_singleton()->texture_allocate(_texture, _width, 1, 0, Image::FORMAT_RF, VS::TEXTURE_TYPE_2D, VS::TEXTURE_FLAG_FILTER);
+	VS::get_singleton()->texture_allocate(_texture, _width, 1, 0, Image::FORMAT_RF, VS::TEXTURE_TYPE_2D, 0);
 	VS::get_singleton()->texture_set_data(_texture, image);
 
 	emit_changed();
