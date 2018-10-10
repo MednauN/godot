@@ -65,6 +65,9 @@ def configure(env):
 
     # FIXME: Check for existence of the libs before parsing their flags with pkg-config
 
+    if not env['builtin_openssl']:
+        env.ParseConfig('pkg-config openssl --cflags --libs')
+
     # freetype depends on libpng and zlib, so bundling one of them while keeping others
     # as shared libraries leads to weird issues
     if env['builtin_freetype'] or env['builtin_libpng'] or env['builtin_zlib']:
