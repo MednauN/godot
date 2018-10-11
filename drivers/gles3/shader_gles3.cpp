@@ -672,17 +672,25 @@ ShaderGLES3::Version *ShaderGLES3::get_current_version() {
 
 		// store compiled shader in cache
 		if (shader_cache_supported) {
+			
 			GLint binary_size = 0;
 			glGetProgramiv(v.id, GL_PROGRAM_BINARY_LENGTH, &binary_size);
+			if (binary_size > 0) {
 
-			CompiledShader compiled_shader;
-			compiled_shader.binary.resize(binary_size);
-			GLsizei binary_bytes_written;
-			glGetProgramBinary(v.id, binary_size, &binary_bytes_written, &compiled_shader.binary_format, compiled_shader.binary.ptrw());
-			if (binary_bytes_written > 0) {
-				compiled_shader.binary.resize(binary_bytes_written);
-				shader_cache->set(code_hash, compiled_shader);
-				shader_cache_changed = true;
+				CompiledShader compiled_shader;
+				compiled_shader.binary.resize(binary_size);
+				GLsizei binary_bytes_written = 0;
+				glGetProgramBinary(v.id, binary_size, &binary_bytes_written, &compiled_shader.binary_format, compiled_shader.binary.ptrw());
+				if (binary_bytes_written > 0) {
+					compiled_shader.binary.resize(binary_bytes_written);
+					shader_cache->set(code_hash, compiled_shader);
+					shader_cache_changed = true;
+				}
+
+			} else if (shader_cache->size() == 0) {
+
+				print_line("Cannot retrieve shader code, disabling shader cache");
+				shader_cache_supported = false;
 			}
 		}
 	}
