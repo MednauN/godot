@@ -184,6 +184,7 @@ void RasterizerCanvasGLES3::canvas_begin() {
 	state.using_texture_rect = true;
 	state.using_ninepatch = false;
 	state.using_skeleton = false;
+	state.selected_nine_patch_buffer = -1;
 }
 
 void RasterizerCanvasGLES3::canvas_end() {
@@ -193,6 +194,7 @@ void RasterizerCanvasGLES3::canvas_end() {
 
 	state.using_texture_rect = false;
 	state.using_ninepatch = false;
+	state.selected_nine_patch_buffer = -1;
 }
 
 RasterizerStorageGLES3::Texture *RasterizerCanvasGLES3::_bind_canvas_texture(const RID &p_texture, const RID &p_normal_map, bool p_force) {
@@ -276,17 +278,36 @@ RasterizerStorageGLES3::Texture *RasterizerCanvasGLES3::_bind_canvas_texture(con
 	return tex_return;
 }
 
-void RasterizerCanvasGLES3::_set_texture_rect_mode(bool p_enable, bool p_ninepatch) {
+void RasterizerCanvasGLES3::_set_texture_rect_mode(bool p_enable, bool p_ninepatch, uint32_t nine_patch_hash) {
 
-	if (state.using_texture_rect == p_enable && state.using_ninepatch == p_ninepatch)
+	if (state.using_texture_rect == p_enable && !state.using_ninepatch && !p_ninepatch)
 		return;
 
 	if (p_enable && p_ninepatch) {
 
-		glBindVertexArray(data.nine_patch_vertices_array);
+		int idx = state.next_nine_patch_buffer;
+
+		// Selecting next buffer. If there is a buffer with desired hash, selecting it
+		// otherwise, selecting next buffer by order
+		for (int i = 0; i < NINE_PATCH_BUFFER_COUNT; ++i) {
+			if (data.nine_patch_buffers[i].vertices_hash == nine_patch_hash) {
+				idx = i;
+				break;
+			}
+		}
+		if (idx == state.next_nine_patch_buffer) {
+			state.next_nine_patch_buffer = (state.next_nine_patch_buffer + 1) % NINE_PATCH_BUFFER_COUNT;
+		}
+
+		if (state.using_texture_rect && state.using_ninepatch && state.selected_nine_patch_buffer == idx) {
+			return;
+		}
+		state.selected_nine_patch_buffer = idx;
+
+		glBindVertexArray(data.nine_patch_buffers[idx].vertices_array);
 
 		// Vertex buffer
-		glBindBuffer(GL_ARRAY_BUFFER, data.nine_patch_vertices);
+		glBindBuffer(GL_ARRAY_BUFFER, data.nine_patch_buffers[idx].vertices);
 
 		glEnableVertexAttribArray(VS::ARRAY_VERTEX);
 		glVertexAttribPointer(VS::ARRAY_VERTEX, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, 0);
@@ -734,23 +755,19 @@ void RasterizerCanvasGLES3::_canvas_item_render_commands(Item *p_item, Item *cur
 
 				Item::CommandNinePatch *np = static_cast<Item::CommandNinePatch *>(c);
 
-				_set_texture_rect_mode(true, true);
-
-				glVertexAttrib4f(VS::ARRAY_COLOR, np->color.r, np->color.g, np->color.b, np->color.a);
-
 				RasterizerStorageGLES3::Texture *texture = _bind_canvas_texture(np->texture, np->normal_map);
 				Size2 texpixel_size;
 				Size2 margin_src_unit;
+				Rect2 src_rect;
 
 				if (!texture) {
 					
 					texpixel_size = Size2(1, 1);
-					state.canvas_shader.set_uniform(CanvasShaderGLES3::SRC_RECT, Color(0, 0, 1, 1));
+					src_rect = Rect2(0, 0, 1, 1);
 				} else {
 
 					texpixel_size = Size2(1.0 / texture->width, 1.0 / texture->height);
 					
-					Rect2 src_rect;
 					if (np->source != Rect2()) {
 						margin_src_unit = Size2(1.0 / np->source.size.width, 1.0 / np->source.size.height);
 						src_rect = Rect2(np->source.position * texpixel_size, np->source.size * texpixel_size);
@@ -758,14 +775,8 @@ void RasterizerCanvasGLES3::_canvas_item_render_commands(Item *p_item, Item *cur
 						margin_src_unit = texpixel_size;
 						src_rect = Rect2(0, 0, 1, 1);
 					}
-
-					state.canvas_shader.set_uniform(CanvasShaderGLES3::SRC_RECT, Color(src_rect.position.x, src_rect.position.y, src_rect.size.x, src_rect.size.y));
 				}
 
-				state.canvas_shader.set_uniform(CanvasShaderGLES3::COLOR_TEXPIXEL_SIZE, texpixel_size);
-				state.canvas_shader.set_uniform(CanvasShaderGLES3::DST_RECT, Color(np->rect.position.x, np->rect.position.y, np->rect.size.x, np->rect.size.y));
-				state.canvas_shader.set_uniform(CanvasShaderGLES3::CLIP_RECT_UV, false);
-				
 				float offsets_x[4] = {
 					0.0f, 
 					np->margin[MARGIN_LEFT] / np->rect.size.x, 
@@ -791,21 +802,43 @@ void RasterizerCanvasGLES3::_canvas_item_render_commands(Item *p_item, Item *cur
 					1.0f
 				};
 
-				float vertices[64];
-				for (int y = 0; y < 4; ++y) {
-					for (int x = 0; x < 4; ++x) {
-						int idx = x * 16 + y * 4;
-						// XY
-						vertices[idx + 0] = offsets_x[x];
-						vertices[idx + 1] = offsets_y[y];
-						//UV
-						vertices[idx + 2] = uv_offsets_x[x];
-						vertices[idx + 3] = uv_offsets_y[y];
-					}
+				uint32_t vert_hash = 5381;
+				for (int i = 1; i < 3; ++i) { // offset[0] and [3] are always the same
+
+					vert_hash = hash_djb2_one_float(offsets_x[i], vert_hash);
+					vert_hash = hash_djb2_one_float(offsets_y[i], vert_hash);
+					vert_hash = hash_djb2_one_float(uv_offsets_x[i], vert_hash);
+					vert_hash = hash_djb2_one_float(uv_offsets_y[i], vert_hash);
 				}
 
-				glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * 64, vertices);
-				glDrawElements(GL_TRIANGLES, 3 * 2 * 9 - (np->draw_center ? 0 : 6), GL_UNSIGNED_BYTE, 0);
+				_set_texture_rect_mode(true, true, vert_hash);
+
+				glVertexAttrib4f(VS::ARRAY_COLOR, np->color.r, np->color.g, np->color.b, np->color.a);
+
+				state.canvas_shader.set_uniform(CanvasShaderGLES3::SRC_RECT, Color(src_rect.position.x, src_rect.position.y, src_rect.size.x, src_rect.size.y));
+				state.canvas_shader.set_uniform(CanvasShaderGLES3::COLOR_TEXPIXEL_SIZE, texpixel_size);
+				state.canvas_shader.set_uniform(CanvasShaderGLES3::DST_RECT, Color(np->rect.position.x, np->rect.position.y, np->rect.size.x, np->rect.size.y));
+				state.canvas_shader.set_uniform(CanvasShaderGLES3::CLIP_RECT_UV, false);
+
+				if (data.nine_patch_buffers[state.selected_nine_patch_buffer].vertices_hash != vert_hash) {
+					
+					float vertices[64];
+					for (int y = 0; y < 4; ++y) {
+						for (int x = 0; x < 4; ++x) {
+							int idx = x * 16 + y * 4;
+							// XY
+							vertices[idx + 0] = offsets_x[x];
+							vertices[idx + 1] = offsets_y[y];
+							//UV
+							vertices[idx + 2] = uv_offsets_x[x];
+							vertices[idx + 3] = uv_offsets_y[y];
+						}
+					}
+
+					glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * 64, vertices);
+					data.nine_patch_buffers[state.selected_nine_patch_buffer].vertices_hash = vert_hash;
+				}
+				glDrawElements(GL_TRIANGLES, 3 * 2 * 9 - (np->draw_center ? 0 : 6), GL_UNSIGNED_SHORT, 0);
 
 				storage->frame.canvas_draw_commands++;
 			} break;
@@ -2135,11 +2168,21 @@ void RasterizerCanvasGLES3::initialize() {
 	}
 	{
 		//nine patch buffers
+		GLuint vertex_buffers[NINE_PATCH_BUFFER_COUNT];
+		GLuint vertex_arrays[NINE_PATCH_BUFFER_COUNT];
 
-		glGenBuffers(1, &data.nine_patch_vertices);
-		glBindBuffer(GL_ARRAY_BUFFER, data.nine_patch_vertices);
-		// 16 points, 4 floats each
-		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 16 * 4, NULL, GL_DYNAMIC_DRAW);
+		glGenBuffers(NINE_PATCH_BUFFER_COUNT, vertex_buffers);
+		glGenVertexArrays(NINE_PATCH_BUFFER_COUNT, vertex_arrays);
+		for (int i = 0; i < NINE_PATCH_BUFFER_COUNT; ++i) {
+
+			glBindBuffer(GL_ARRAY_BUFFER, vertex_buffers[i]);
+			// 16 points, 4 floats each
+			glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 16 * 4, NULL, GL_DYNAMIC_DRAW);
+
+			data.nine_patch_buffers[i].vertices_hash = 0;
+			data.nine_patch_buffers[i].vertices = vertex_buffers[i];
+			data.nine_patch_buffers[i].vertices_array = vertex_arrays[i];
+		}
 		glBindBuffer(GL_ARRAY_BUFFER, 0); //unbind
 
 		glGenBuffers(1, &data.nine_patch_indices);
@@ -2147,7 +2190,7 @@ void RasterizerCanvasGLES3::initialize() {
 		{
 			// copied from gles2 rasterizer
 #define _EIDX(y, x) (y * 4 + x)
-		uint8_t elems[3 * 2 * 9] = {
+		uint16_t elems[3 * 2 * 9] = {
 
 			// first row
 
@@ -2189,7 +2232,6 @@ void RasterizerCanvasGLES3::initialize() {
 			glBufferData(GL_ARRAY_BUFFER, sizeof(elems), elems, GL_STATIC_DRAW);
 		}
 		glBindBuffer(GL_ARRAY_BUFFER, 0); //unbind
-		glGenVertexArrays(1, &data.nine_patch_vertices_array);
 	}
 
 	store_transform(Transform(), state.canvas_item_ubo_data.projection_matrix);
@@ -2208,6 +2250,9 @@ void RasterizerCanvasGLES3::initialize() {
 	state.canvas_shadow_shader.set_conditional(CanvasShadowShaderGLES3::USE_RGBA_SHADOWS, storage->config.use_rgba_2d_shadows);
 
 	state.canvas_shader.set_conditional(CanvasShaderGLES3::USE_PIXEL_SNAP, GLOBAL_DEF("rendering/quality/2d/use_pixel_snap", false));
+
+	state.selected_nine_patch_buffer = -1;
+	state.next_nine_patch_buffer = 0;
 }
 
 void RasterizerCanvasGLES3::finalize() {

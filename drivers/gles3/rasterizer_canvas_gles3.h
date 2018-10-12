@@ -50,6 +50,14 @@ public:
 
 	RasterizerSceneGLES3 *scene_render;
 
+	static const int NINE_PATCH_BUFFER_COUNT = 32;
+	struct NinePatchVertexBuffer {
+
+		GLuint vertices;
+		uint32_t vertices_hash;
+		GLuint vertices_array;
+	};
+
 	struct Data {
 
 		GLuint canvas_quad_vertices;
@@ -63,7 +71,7 @@ public:
 		GLuint particle_quad_vertices;
 		GLuint particle_quad_array;
 
-		GLuint nine_patch_vertices;
+		NinePatchVertexBuffer nine_patch_buffers[NINE_PATCH_BUFFER_COUNT];
 		GLuint nine_patch_indices;
 		GLuint nine_patch_vertices_array;
 
@@ -81,6 +89,8 @@ public:
 
 		bool using_texture_rect;
 		bool using_ninepatch;
+		int selected_nine_patch_buffer;
+		int next_nine_patch_buffer;
 
 		RID current_tex;
 		RID current_normal;
@@ -129,7 +139,7 @@ public:
 	virtual void canvas_begin();
 	virtual void canvas_end();
 
-	_FORCE_INLINE_ void _set_texture_rect_mode(bool p_enable, bool p_ninepatch = false);
+	_FORCE_INLINE_ void _set_texture_rect_mode(bool p_enable, bool p_ninepatch = false, uint32_t nine_patch_hash = 0);
 	_FORCE_INLINE_ RasterizerStorageGLES3::Texture *_bind_canvas_texture(const RID &p_texture, const RID &p_normal_map, bool p_force = false);
 
 	_FORCE_INLINE_ void _draw_gui_primitive(int p_points, const Vector2 *p_vertices, const Color *p_colors, const Vector2 *p_uvs);
