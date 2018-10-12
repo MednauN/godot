@@ -31,20 +31,13 @@
 package org.godotengine.godot;
 import android.content.Context;
 import android.graphics.PixelFormat;
-import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
-import android.util.AttributeSet;
+import android.os.Handler;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
-import android.content.ContextWrapper;
 import android.view.InputDevice;
-import android.hardware.input.InputManager;
 
-import java.io.File;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -389,7 +382,7 @@ public class GodotView extends GLSurfaceView implements InputDeviceListener {
 		/* Setup the context factory for 2.0 rendering.
 		 * See ContextFactory class definition below
 		 */
-		setEGLContextFactory(new ContextFactory());
+		setEGLContextFactory(new ContextFactory(activity));
 
 		/* We need to choose an EGLConfig that matches the format of
 		 * our surface exactly. This is going to be done in our
@@ -417,6 +410,12 @@ public class GodotView extends GLSurfaceView implements InputDeviceListener {
 	
 	private static class ContextFactory implements GLSurfaceView.EGLContextFactory {
 		private static int EGL_CONTEXT_CLIENT_VERSION = 0x3098;
+		private final Godot activity;
+
+		private ContextFactory(Godot activity) {
+			this.activity = activity;
+		}
+
 		public EGLContext createContext(EGL10 egl, EGLDisplay display, EGLConfig eglConfig) {
 			if (use_gl3)
 				Log.w(TAG, "creating OpenGL ES 3.0 context :");
@@ -440,6 +439,15 @@ public class GodotView extends GLSurfaceView implements InputDeviceListener {
 
 		public void destroyContext(EGL10 egl, EGLDisplay display, EGLContext context) {
 			egl.eglDestroyContext(display, context);
+			Log.w(TAG, "EGLContext destroyed");
+			Handler mainHandler = new Handler(activity.getMainLooper());
+			mainHandler.post(new Runnable() {
+				@Override
+				public void run() {
+					Log.w(TAG, "Force quitting");
+					activity.forceQuit();
+				}
+			});
 		}
 	}
 
@@ -679,7 +687,6 @@ public class GodotView extends GLSurfaceView implements InputDeviceListener {
 	private static class Renderer implements GLSurfaceView.Renderer {
 
 		public void onDrawFrame(GL10 gl) {
-			GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT);
 			GodotLib.step();
 			for (int i = 0; i < Godot.singleton_count; i++) {
 				Godot.singletons[i].onGLDrawFrame(gl);
