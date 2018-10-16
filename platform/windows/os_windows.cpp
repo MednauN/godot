@@ -1719,6 +1719,10 @@ void OS_Windows::set_window_position(const Point2 &p_position) {
 }
 Size2 OS_Windows::get_window_size() const {
 
+	if (minimized) {
+		return Vector2(video_mode.width, video_mode.height);
+	}
+	
 	RECT r;
 	GetClientRect(hWnd, &r);
 	return Vector2(r.right - r.left, r.bottom - r.top);
