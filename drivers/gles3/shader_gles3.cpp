@@ -611,12 +611,38 @@ ShaderGLES3::Version *ShaderGLES3::get_current_version() {
 			v.id = glCreateProgram();
 			ERR_FAIL_COND_V(v.id == 0, NULL);
 
+			// Some of Mali GPU's doesn't store feedback data in shader binary
+			// Re-initializing feedbacks before loading shader may fix this issue
+			Vector<const char *> feedback;
+			for (int i = 0; i < feedback_count; i++) {
+
+				if (feedbacks[i].conditional == -1 || (1 << feedbacks[i].conditional) & conditional_version.version) {
+					//conditional for this feedback is enabled
+					feedback.push_back(feedbacks[i].name);
+				}
+			}
+			if (feedback.size()) {
+				glTransformFeedbackVaryings(v.id, feedback.size(), feedback.ptr(), GL_INTERLEAVED_ATTRIBS);
+			}
+
 			CompiledShader compiled_shader = shader_cache->get(code_hash);
 			glProgramBinary(v.id, compiled_shader.binary_format, compiled_shader.binary.ptr(), compiled_shader.binary.size());
 
 			glGetProgramiv(v.id, GL_LINK_STATUS, &status);
 			if (status != GL_FALSE) {
 				shader_loaded_from_cache = true;
+			}
+
+			if (shader_loaded_from_cache && !feedback.empty()) {
+					
+				GLint actual_feedback_count = 0;
+				glGetProgramiv(v.id, GL_TRANSFORM_FEEDBACK_VARYINGS, &actual_feedback_count);
+				// If actual feedback data is different from what expected
+				// We have no choice, but to compile shader again
+				if (actual_feedback_count != feedback.size()) {
+
+					shader_loaded_from_cache = false;
+				}
 			}
 		}
 	}
