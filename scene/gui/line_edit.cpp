@@ -1485,6 +1485,12 @@ void LineEdit::_ime_text_callback(void *p_self, String p_text, Point2 p_selectio
 		self->deselect();
 		self->set_text(p_text.replace("\n", ""));
 		self->release_focus();
+		if (!self->text_changed_dirty) {
+			if (self->is_inside_tree()) {
+				MessageQueue::get_singleton()->push_call(self, "_text_changed");
+			}
+			self->text_changed_dirty = true;
+		}
 		return;
 	}
 	self->ime_text = p_text;
